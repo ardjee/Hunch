@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(del:*)",
+      "Bash(npm run dev:*)",
+      "Read(//c/Users/luukv/OneDrive/Claude/Hunch_local/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

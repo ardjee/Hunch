@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "909294992437",
+    "project_id": "the-hunch-3cdb0",
+    "storage_bucket": "the-hunch-3cdb0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:909294992437:android:bea7134fe94d330e3f057c",
+        "android_client_info": {
+          "package_name": "com.espelo.thehunch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdMwizn8GVeCLS3fhnfJeN5LY__qfg8cE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

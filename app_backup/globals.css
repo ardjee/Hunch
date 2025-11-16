@@ -1,0 +1,208 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Merriweather', serif; /* Default body font */
+}
+
+@layer base {
+  :root {
+    /* Fantasy/Medieval Parchment Theme */
+    --background: hsl(40, 75%, 94%); /* Light Parchment - Main page background */
+    --foreground: hsl(35, 45%, 20%); /* Dark Sepia/Brown - Main text color */
+
+    --card: hsl(40, 60%, 96%); /* Slightly Lighter/Whiter Parchment - Card backgrounds */
+    --card-foreground: hsl(35, 45%, 20%);
+
+    --popover: hsl(40, 60%, 92%); /* Parchment for popovers */
+    --popover-foreground: hsl(35, 45%, 20%);
+
+    --primary: hsl(0, 45%, 40%); /* Deep Muted Red - Accents, hearts, "seal" */
+    --primary-foreground: hsl(40, 75%, 94%); /* Light Parchment - Text on red */
+
+    --secondary: hsl(35, 30%, 75%); /* Aged Parchment - Secondary elements */
+    --secondary-foreground: hsl(35, 45%, 25%); /* Darker brown for text on secondary */
+
+    --muted: hsl(40, 50%, 88%); /* Darker Parchment tone - Muted backgrounds */
+    --muted-foreground: hsl(35, 30%, 40%); /* Softer Brown - Muted text */
+
+    --accent: hsl(30, 35%, 25%); /* Dark Brown - Progress bar fill, hover states */
+    --accent-foreground: hsl(40, 75%, 94%); /* Light Parchment - Text on accent */
+
+    --destructive: hsl(0, 60%, 45%); /* A slightly more vibrant red for destructive actions */
+    --destructive-foreground: hsl(40, 75%, 94%);
+
+    --border: hsl(30, 40%, 30%); /* Rich Brown - Borders for cards and elements */
+    --input: hsl(40, 40%, 85%); /* Lighter Parchment for input backgrounds */
+    --input-lighter: hsl(40, 40%, 95%); /* 20% lighter than input */
+    --ring: hsl(30, 50%, 50%); /* Brownish-Red for focus rings */
+
+    --chart-1: hsl(0, 45%, 40%);
+    --chart-2: hsl(30, 40%, 30%);
+    --chart-3: hsl(35, 30%, 40%);
+    --chart-4: hsl(35, 45%, 20%);
+    --chart-5: hsl(40, 50%, 88%);
+
+    --radius: 0.4rem; /* Slightly sharper corners */
+
+    /* Specific Sidebar colors - adapt if sidebar is used, for now keep somewhat aligned */
+    --sidebar-background: hsl(40, 65%, 90%); /* Parchment for sidebar */
+    --sidebar-foreground: hsl(35, 45%, 20%);
+    --sidebar-primary: hsl(0, 45%, 40%);
+    --sidebar-primary-foreground: hsl(40, 75%, 94%);
+    --sidebar-accent: hsl(35, 30%, 75%);
+    --sidebar-accent-foreground: hsl(35, 45%, 25%);
+    --sidebar-border: hsl(30, 40%, 45%);
+    --sidebar-ring: hsl(30, 50%, 50%);
+  }
+
+  .dark {
+    /* Keeping dark mode somewhat consistent, can be further themed if needed */
+    --background: hsl(35, 25%, 15%); /* Dark Brown background */
+    --foreground: hsl(40, 50%, 88%); /* Light Parchment text */
+
+    --card: hsl(35, 25%, 20%); /* Darker Brown for cards */
+    --card-foreground: hsl(40, 50%, 88%);
+
+    --popover: hsl(35, 25%, 18%);
+    --popover-foreground: hsl(40, 50%, 88%);
+
+    --primary: hsl(0, 50%, 55%); /* Slightly brighter Red for dark mode */
+    --primary-foreground: hsl(35, 25%, 15%);
+
+    --secondary: hsl(35, 20%, 30%); /* Mid-Dark Brown */
+    --secondary-foreground: hsl(40, 50%, 88%);
+
+    --muted: hsl(35, 20%, 25%); /* Dark Muted Brown */
+    --muted-foreground: hsl(40, 40%, 70%);
+
+    --accent: hsl(30, 40%, 40%); /* Richer Brown for accent */
+    --accent-foreground: hsl(35, 25%, 15%);
+
+    --destructive: hsl(0, 60%, 50%);
+    --destructive-foreground: hsl(40, 50%, 88%);
+
+    --border: hsl(30, 30%, 40%); /* Brown border for dark mode */
+    --input: hsl(35, 20%, 28%); /* Dark input */
+    --input-lighter: hsl(35, 20%, 35%); /* Lighter dark input */
+    --ring: hsl(0, 55%, 60%);
+
+    --chart-1: hsl(0, 50%, 55%);
+    --chart-2: hsl(30, 40%, 40%);
+    --chart-3: hsl(35, 30%, 50%);
+    --chart-4: hsl(40, 50%, 88%);
+    --chart-5: hsl(35, 20%, 25%);
+
+    --sidebar-background: hsl(35, 25%, 15%);
+    --sidebar-foreground: hsl(40, 50%, 88%);
+    --sidebar-primary: hsl(0, 50%, 55%);
+    --sidebar-primary-foreground: hsl(35, 25%, 15%);
+    --sidebar-accent: hsl(35, 20%, 30%);
+    --sidebar-accent-foreground: hsl(40, 50%, 88%);
+    --sidebar-border: hsl(30, 30%, 40%);
+    --sidebar-ring: hsl(0, 55%, 60%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+   .card, .button { /* More specific button styling will be in components */
+    @apply shadow-md; /* Subtle shadow, can be customized */
+  }
+}
+
+@layer utilities {
+  .hunch-glow {
+    animation: medieval-pulse 2.5s infinite ease-in-out;
+  }
+  @keyframes medieval-pulse {
+    0%, 100% {
+      box-shadow: 0 0 8px 0px rgba(51, 51, 51, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 16px 4px rgba(51, 51, 51, 0.5);
+    }
+  }
+
+  .parchment-card {
+    @apply bg-card border-2 border-amber-700 rounded-md shadow-lg p-4;
+  }
+
+  .title-plaque {
+    @apply border-2 border-amber-800 bg-amber-100/50 rounded-sm px-4 py-2 text-center text-amber-900 font-headline uppercase tracking-wider text-sm;
+    box-shadow: inset 0 0 5px hsl(var(--border) / 0.3);
+  }
+  
+  .page-border-wrapper {
+    @apply border-8 border-amber-800 p-2 sm:p-4 md:p-6 shadow-inner-lg;
+    border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cstyle%3Epath%7Bfill:hsl(30, 40%, 30%);%7D%3C/style%3E%3Cpath d='M0 0 H10 V10 H0 Z M90 0 H100 V10 H90 Z M0 90 H10 V100 H0 Z M90 90 H100 V100 H90 Z M10 0 H90 V5 H10 Z M10 95 H90 V100 H10 Z M0 10 H5 V90 H0 Z M95 10 H100 V90 H95 Z'/%3E%3C/svg%3E") 20 / 15px / 0 round;
+    /* The border-image is a very basic attempt and might need a real asset for a good look */
+  }
+
+   .shadow-inner-lg {
+    box-shadow: inset 0 4px 10px 0 rgb(0 0 0 / 0.15);
+  }
+
+  .hunch-box {
+    border: 2px solid #6e4c1f; /* dark outer border */
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3); /* drop shadow */
+    position: relative;
+    font-family: 'Georgia', serif;
+    color: #2e1c0c;
+  }
+  
+  /* Optional inner border inset effect */
+  .hunch-box::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border: 1px solid #b68b51;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  /* Use z-index > 0 for content to appear over the inset line */
+  .hunch-box * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Example content styling */
+  .hunch-box h2 {
+    margin: 0;
+    font-size: 1.8em;
+  }
+  
+  .hunch-box .badge {
+    float: right;
+    font-weight: bold;
+    font-size: 1em;
+    background: none;
+  }
+  
+  .hunch-box .subtitle {
+    font-size: 1.2em;
+    margin: 10px 0;
+  }
+  
+  .hunch-box .stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1em;
+    border-top: 1px solid #b68b51;
+    padding-top: 8px;
+    margin-top: 10px;
+  }
+}
