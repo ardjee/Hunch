@@ -9,13 +9,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserCheck, UserPlus, Crown, Play, Users, ShieldCheck, Copy, Info, Loader2, ShieldAlert, Castle } from 'lucide-react';
+import { UserCheck, UserPlus, Crown, Play, Users, ShieldCheck, Copy, Info, Loader2, ShieldAlert, Castle, Bot } from 'lucide-react';
 import type { Player, Game } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import HunchLogo from '@/components/ui/HunchLogo';
 import { db } from '@/lib/firebase/client';
 import { doc, collection, onSnapshot, setDoc, updateDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
+import { AI_PROFILES, DEFAULT_AI_PROFILE_ID, generateAiScreenName, getAiProfile } from '@/lib/ai/profiles';
+import type { AiProfileId } from '@/lib/ai/types';
 
 const getInitials = (name: string) => {
   if (!name) return '';
@@ -43,6 +46,8 @@ function LobbyContent() {
   const [isLoading, setIsLoading] = useState(false); // For actions like 'Start Game'
   const [isPageLoading, setIsPageLoading] = useState(true); // For initial page content
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null); // Initialize to null
+  const [selectedAiProfileId, setSelectedAiProfileId] = useState<AiProfileId>(DEFAULT_AI_PROFILE_ID);
+  const [isAddingAi, setIsAddingAi] = useState(false);
   
   const playerProcessingAttemptedRef = useRef(false);
 
@@ -273,6 +278,51 @@ function LobbyContent() {
         setIsLoading(false);
     }
   };
+
+  const handleAddAiPlayer = async () => {
+    if (!db || !gameId || !gameData || !isCurrentPlayerGameMaster) return;
+
+    if (isLobbyFull) {
+      toast({
+        title: "Lobby Full",
+        description: "Remove someone or raise the player cap before adding AI teammates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingAi(true);
+    try {
+      const profile = getAiProfile(selectedAiProfileId);
+      const existingNames = players.map((player) => player.screenName);
+      const screenName = generateAiScreenName(existingNames, profile);
+      const newPlayerId = doc(collection(db, 'players_placeholder')).id;
+      const aiPlayerPayload: Player = {
+        id: newPlayerId,
+        screenName,
+        lives: 1,
+        dailyCoins: 2,
+        isAdmitted: true,
+        isAi: true,
+        aiProfileId: profile.id,
+        createdAt: serverTimestamp(),
+      };
+      await setDoc(doc(db, 'games', gameId, 'players', newPlayerId), aiPlayerPayload);
+      toast({
+        title: "AI Player Added",
+        description: `${screenName} (${profile.label}) joined the lobby.`,
+      });
+    } catch (error) {
+      console.error("Error adding AI player:", error);
+      toast({
+        title: "Unable to Add AI Player",
+        description: "Something went wrong while provisioning the AI assistant.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingAi(false);
+    }
+  };
   
   // This is the primary loading condition for the page content.
   if (isPageLoading || !gameData) { 
@@ -344,6 +394,59 @@ function LobbyContent() {
             )}
              {isCurrentPlayerGameMaster && pendingPlayers.length === 0 && players.filter(p => !p.isAdmitted).length > 0 && (
                 <p className="text-sm text-muted-foreground">No other players currently waiting for approval.</p>
+            )}
+
+            {isCurrentPlayerGameMaster && (
+              <div className="rounded-xl border border-dashed border-primary/30 bg-muted/40 p-4 space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold flex items-center">
+                      <Bot className="mr-2 h-5 w-5 text-primary" /> AI Assistants
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Fill extra seats with computer-controlled players who handle every in-game task automatically.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="uppercase tracking-wide text-xs">
+                    Beta
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Select value={selectedAiProfileId} onValueChange={(value) => setSelectedAiProfileId(value as AiProfileId)}>
+                    <SelectTrigger className="w-full sm:w-64">
+                      <SelectValue placeholder="Choose a playstyle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AI_PROFILES.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleAddAiPlayer}
+                    className="w-full sm:w-auto"
+                    size="lg"
+                    disabled={isAddingAi || isLobbyFull}
+                  >
+                    {isAddingAi ? (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                      <Bot className="mr-2 h-5 w-5" />
+                    )}
+                    {isAddingAi ? 'Adding AI...' : 'Add AI Player'}
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <p>AI teammates submit hunches, vote, pick characters, and resolve judge/magician duties for you.</p>
+                  {isLobbyFull && (
+                    <p className="text-destructive mt-1 font-semibold">
+                      Lobby is full. Remove a player or increase the cap to add more AI assistants.
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
 
 
@@ -436,6 +539,11 @@ const PlayerItem: React.FC<PlayerItemProps> = ({ player, isGameMaster, onAdmit, 
         <AvatarFallback>{getInitials(player.screenName)}</AvatarFallback>
       </Avatar>
       <span className="font-medium text-card-foreground">{player.screenName}</span>
+      {player.isAi && (
+        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+          AI
+        </Badge>
+      )}
       {isGameMaster && (
         <TooltipProvider>
           <Tooltip>

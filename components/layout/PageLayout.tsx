@@ -12,15 +12,22 @@ interface PageLayoutProps {
 
 const PageLayout: React.FC<PageLayoutProps> = ({ children, title, showLogo = true }) => {
   return (
-    // MOBILE FIRST: Parchment background on the main container, screen-filling by default.
-    // md-breakpoint switches to a neutral page background color.
-    <div className="min-h-screen flex flex-col items-center bg-[url('/hunch_bg1.png')] bg-cover bg-center bg-fixed md:bg-background md:p-4">
+    // MOBILE FIRST: Solid parchment-style background on the main container.
+    // The actual illustrated parchment image is applied on the inner card so it can scale nicely.
+    <div className="min-h-screen flex flex-col items-center bg-background md:p-4">
       
       {/* DESKTOP CONTAINER: On medium screens and up, this gets the border and the parchment background.
           On mobile, it's a transparent full-width container. */}
       <div 
         className="w-full max-w-4xl flex-grow z-10 relative 
-                   md:page-border-wrapper md:my-8 md:bg-[url('/hunch_bg1.png')] md:bg-cover md:bg-center"
+                   md:page-border-wrapper md:my-8"
+        style={{
+          backgroundImage: "url('/hunch_bg1.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top right",
+          // Scale image proportionally to cover the card while keeping the castle in the top-right
+          backgroundSize: "cover",
+        }}
       >
         {/* Wrapper for content to ensure it's above the internal castle image */}
         <div className="relative z-10 p-2 sm:p-4 h-full flex flex-col">

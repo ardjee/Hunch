@@ -30,7 +30,7 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "text-card-foreground bg-[url('/hunch_bg1.png')] bg-cover bg-center",
+        default: "text-card-foreground bg-hunch-parchment",
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
       },

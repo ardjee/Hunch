@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useState, useMemo } from 'react';
+import { Suspense, useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageLayout from '@/components/layout/PageLayout';
 import PlayerStatusDisplay from '@/components/game/PlayerStatusDisplay';
@@ -18,6 +18,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
     Drawer,
     DrawerContent,
     DrawerHeader,
@@ -32,7 +39,9 @@ import CharacterSelection from '@/components/game/CharacterSelection';
 import JudgeTargetSelection from '@/components/game/JudgeTargetSelection';
 import MagicianTargetSelection from '@/components/game/MagicianTargetSelection';
 import DayResultsDisplay from '@/components/game/DayResultsDisplay';
+import VoteSummaryDisplay from '@/components/game/VoteSummaryDisplay';
 import { CHARACTERS_LIST } from '@/lib/characters';
+import Image from 'next/image';
 
 
 function ResponsiveDialog({
@@ -96,6 +105,8 @@ function GamePageContent() {
   } = useGameData();
 
   const [isStandingsOpen, setIsStandingsOpen] = useState(false);
+  const [lastRevealedCharacterId, setLastRevealedCharacterId] = useState<string | null | undefined>(null);
+  const [isRevealDialogOpen, setIsRevealDialogOpen] = useState(false);
   
   if (isLoading) {
     return (
@@ -135,6 +146,35 @@ function GamePageContent() {
     totalAdmittedPlayers: admittedPlayersFiltered.length,
     playersWhoSelectedForCurrentDay: Object.keys(selectionsForCurrentDayByPlayer).filter(pid => admittedPlayersFiltered.some(ap => ap.id === pid)).length,
   };
+  
+  const isCharacterSelectionPhase = gameData.currentDayStep === 3 && !selectedCharacterInfoThisDay;
+
+  // Disable body scrolling during character selection
+  useEffect(() => {
+    if (isCharacterSelectionPhase) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isCharacterSelectionPhase]);
+
+  // Detect when a new character is revealed and show popup
+  useEffect(() => {
+    if (gameData?.currentDayStep === 4 && gameData.activelyRevealedCharacterId) {
+      // Check if this is a new character reveal
+      if (gameData.activelyRevealedCharacterId !== lastRevealedCharacterId) {
+        setLastRevealedCharacterId(gameData.activelyRevealedCharacterId);
+        setIsRevealDialogOpen(true);
+      }
+    } else {
+      // Reset when not in step 4
+      setLastRevealedCharacterId(null);
+      setIsRevealDialogOpen(false);
+    }
+  }, [gameData?.activelyRevealedCharacterId, gameData?.currentDayStep, lastRevealedCharacterId]);
   
   const mainContent = (() => {
     const {
@@ -241,6 +281,17 @@ function GamePageContent() {
         return <DayResultsDisplay results={currentDayResults} currentDay={currentDay} />;
       }
 
+      if (currentDayStep === 6) {
+        return (
+          <VoteSummaryDisplay
+            votes={gameData.playerVotes || {}}
+            players={admittedPlayers}
+            currentDay={currentDay}
+            actualResult={gameData.currentDayResults?.actualResult}
+          />
+        );
+      }
+
       // Debug logging for step 5
       if (currentDayStep === 5) {
         console.log('Step 5 Debug:', {
@@ -264,31 +315,37 @@ function GamePageContent() {
 
   return (
     <PageLayout title="The Hunch" showLogo={false}>
-      <div className="w-full space-y-6">
-        {mainContent}
-
-        {gameData.currentDayStep === 3 && !selectedCharacterInfoThisDay && (
-          <PlayerSelectionStatusList
-            currentDay={gameData.currentDay}
-            characterSelectionStatus={characterSelectionStatus}
-            players={admittedPlayersFiltered}
-            selectionsForCurrentDay={selectionsForCurrentDayByPlayer}
-          />
-        )}
-
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-4 border-t border-border/50">
-          <ResponsiveDialog
-            isOpen={isStandingsOpen}
-            onOpenChange={setIsStandingsOpen}
-            title="Player Standings"
-            trigger={<Button variant="outline" className="w-full sm:w-auto"><Users className="mr-2" /> Player Standings</Button>}
-          >
-            <PlayerStatusDisplay players={admittedPlayersFiltered} gameMasterId={gameData.gameMasterId} jackpotAmount={gameData.jackpotAmount || 0} />
-          </ResponsiveDialog>
+      <div className={`w-full ${isCharacterSelectionPhase ? 'h-[calc(100vh-4rem)] overflow-hidden' : 'space-y-6'}`}>
+        <div className={isCharacterSelectionPhase ? 'h-full overflow-hidden' : ''}>
+          {mainContent}
         </div>
+
+        {!isCharacterSelectionPhase && (
+          <>
+            {gameData.currentDayStep === 3 && !selectedCharacterInfoThisDay && (
+              <PlayerSelectionStatusList
+                currentDay={gameData.currentDay}
+                characterSelectionStatus={characterSelectionStatus}
+                players={admittedPlayersFiltered}
+                selectionsForCurrentDay={selectionsForCurrentDayByPlayer}
+              />
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-4 border-t border-border/50">
+              <ResponsiveDialog
+                isOpen={isStandingsOpen}
+                onOpenChange={setIsStandingsOpen}
+                title="Player Standings"
+                trigger={<Button variant="outline" className="w-full sm:w-auto"><Users className="mr-2" /> Player Standings</Button>}
+              >
+                <PlayerStatusDisplay players={admittedPlayersFiltered} gameMasterId={gameData.gameMasterId} jackpotAmount={gameData.jackpotAmount || 0} />
+              </ResponsiveDialog>
+            </div>
+          </>
+        )}
       </div>
 
-      {isCurrentUserGameMaster && (
+      {!isCharacterSelectionPhase && isCurrentUserGameMaster && (
         <GameMasterControls
           gameData={gameData}
           players={admittedPlayersFiltered}
@@ -297,23 +354,104 @@ function GamePageContent() {
           handleProceedToCharacterSelectionPhase={gameActions.handleProceedToCharacterSelectionPhase}
           handleProcessCharacterEffect={gameActions.handleProcessCharacterEffect}
           handleRevealDayResults={gameActions.handleRevealDayResults}
+          handleShowVoteSummary={gameActions.handleShowVoteSummary}
           handleEndOfDayResolution={gameActions.handleEndOfDayResolution}
           getNextCharacterToReveal={gameActions.getNextCharacterToReveal}
           isLoadingProceedToCharacters={false}
           isLoadingCharacterProcessing={false}
           isLoadingDayResults={false}
+          isLoadingVoteSummary={false}
           isLoadingEndOfDay={false}
           isLoadingJudgeSelection={false}
         />
       )}
 
-      <div className="mt-8 flex justify-center">
-        <div className="w-full max-w-md">
-          <Button onClick={() => router.push('/')} variant="outline" size="lg" className="w-full">
-            <Castle className="mr-2 h-5 w-5" /> Back to Main Screen
-          </Button>
+      {!isCharacterSelectionPhase && (
+        <div className="mt-8 flex justify-center">
+          <div className="w-full max-w-md">
+            <Button onClick={() => router.push('/')} variant="outline" size="lg" className="w-full">
+              <Castle className="mr-2 h-5 w-5" /> Back to Main Screen
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Character Reveal Dialog */}
+      {gameData?.currentDayStep === 4 && gameData.activelyRevealedCharacterId && (() => {
+        const revealedCharacter = CHARACTERS_LIST.find(c => c.id === gameData.activelyRevealedCharacterId);
+        const dayKey = String(gameData.currentDay);
+        const selectionsForThisDay = gameData.playerCharacterSelectionsByDay?.[dayKey] || {};
+        const playersWhoChoseCharacter = revealedCharacter
+          ? admittedPlayersFiltered.filter(p => selectionsForThisDay[p.id]?.characterId === revealedCharacter.id)
+          : [];
+        
+        return (
+          <Dialog open={isRevealDialogOpen} onOpenChange={(open) => {
+            // Only allow closing via the Continue button, not by clicking outside
+            if (!open) {
+              setIsRevealDialogOpen(false);
+            }
+          }}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-headline text-primary flex items-center gap-2">
+                  {revealedCharacter?.icon && <revealedCharacter.icon className="h-8 w-8" />}
+                  {revealedCharacter?.name || 'Character'} Revealed!
+                </DialogTitle>
+                <DialogDescription className="text-base font-body">
+                  Character effects have been applied
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 mt-4">
+                {/* Character Image */}
+                {revealedCharacter && (
+                  <div className="relative w-full h-64 bg-muted/30 rounded-md overflow-hidden border-2 border-border">
+                    <Image
+                      src={revealedCharacter.imageUrl}
+                      alt={revealedCharacter.name}
+                      fill
+                      style={{ objectFit: 'cover', objectPosition: 'top' }}
+                      className="rounded-md"
+                      sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
+                    />
+                  </div>
+                )}
+
+                {/* Who Chose This Character */}
+                <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                  <h3 className="font-headline text-lg font-semibold mb-2 text-primary">Players Who Chose This Character:</h3>
+                  {playersWhoChoseCharacter.length > 0 ? (
+                    <ul className="list-disc pl-5 space-y-1">
+                      {playersWhoChoseCharacter.map(player => (
+                        <li key={player.id} className="font-body text-base">{player.screenName}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="font-body text-muted-foreground">No one chose this character.</p>
+                  )}
+                </div>
+
+                {/* Character Effects */}
+                {revealedCharacter && (
+                  <div className="bg-primary/10 p-4 rounded-lg border-2 border-primary/30">
+                    <h3 className="font-headline text-lg font-semibold mb-2 text-primary">Character Effects:</h3>
+                    <p className="font-body text-base leading-relaxed whitespace-pre-line">
+                      {revealedCharacter.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setIsRevealDialogOpen(false)} size="lg" className="font-headline">
+                  Continue
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </PageLayout>
   );
 }

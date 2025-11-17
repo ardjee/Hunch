@@ -11,6 +11,7 @@ import AbstractBlurredIcon from '@/components/icons/AbstractBlurredIcon';
 import { useState } from 'react';
 import type { Player } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface CurrentRoundActionsProps {
   currentDay: number;
@@ -168,30 +169,39 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
                   </div>
                 </div>
                 <div className="pt-4 border-t mt-4">
-                  <h4 className="text-md font-semibold mb-3 flex items-center">
-                      <Users className="mr-2 h-5 w-5 text-primary" /> Voting Status
-                      <Badge variant="secondary" className="ml-2">
-                      {totalVotesCast} / {players.length} voted
-                      </Badge>
-                  </h4>
-                  {players.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No players to show status.</p>
-                  ) : (
-                      <ul className="space-y-2">
-                      {players.map(player => (
-                          <li key={player.id} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded-md">
-                          <span className="text-foreground font-medium">{player.screenName}</span>
-                          {playerVotes[player.id] ? (
-                              <Badge variant="default" className="bg-primary text-primary-foreground">
-                              <Check className="mr-1 h-3 w-3" /> Voted
-                              </Badge>
-                          ) : (
-                              <Badge variant="outline">Pending Vote</Badge>
-                          )}
-                          </li>
-                      ))}
-                      </ul>
-                  )}
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="voting-status" className="border border-border rounded-lg px-4">
+                      <AccordionTrigger className="hover:no-underline flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          <span className="text-md font-semibold">Voting Status</span>
+                        </span>
+                        <Badge variant="secondary">
+                          {totalVotesCast} / {players.length} voted
+                        </Badge>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {players.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No players to show status.</p>
+                        ) : (
+                          <ul className="space-y-2 pt-2">
+                            {players.map(player => (
+                              <li key={player.id} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded-md">
+                                <span className="text-foreground font-medium">{player.screenName}</span>
+                                {playerVotes[player.id] ? (
+                                  <Badge variant="default" className="bg-primary text-primary-foreground">
+                                    <Check className="mr-1 h-3 w-3" /> Voted
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline">Pending Vote</Badge>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
               </>
             )}
@@ -231,34 +241,43 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
             )}
 
             {activeChallengeDescription && (
-                <div className="pt-4 border-t">
-                <h4 className="text-md font-semibold mb-3 flex items-center">
-                    <Users className="mr-2 h-5 w-5 text-primary" /> Hunch Submission Status
-                    <Badge variant="secondary" className="ml-2">
-                    {submittedHunchPlayerIds.size} / {players.length} submitted
-                    </Badge>
-                </h4>
-                {players.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No players available to show status.</p>
-                ) : submittedHunchPlayerIds.size === 0 && players.length > 0 ? (
-                    <p className="text-sm text-muted-foreground">No hunches submitted yet for this challenge.</p>
-                ) : (
-                    <ul className="space-y-2">
-                    {players.map(player => (
-                        <li key={player.id} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded-md">
-                        <span className="text-foreground font-medium">{player.screenName}</span>
-                        {submittedHunchPlayerIds.has(player.id) ? (
-                            <Badge variant="default" className="bg-primary text-primary-foreground">
-                            <Check className="mr-1 h-3 w-3" /> Submitted
-                            </Badge>
-                        ) : (
-                            <Badge variant="outline">Pending</Badge>
-                        )}
-                        </li>
-                    ))}
-                    </ul>
-                )}
-                </div>
+              <div className="pt-4 border-t">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="submission-status" className="border border-border rounded-lg px-4">
+                    <AccordionTrigger className="hover:no-underline flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="text-md font-semibold">Hunch Submission Status</span>
+                      </span>
+                      <Badge variant="secondary">
+                        {submittedHunchPlayerIds.size} / {players.length} submitted
+                      </Badge>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {players.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No players available to show status.</p>
+                      ) : submittedHunchPlayerIds.size === 0 && players.length > 0 ? (
+                        <p className="text-sm text-muted-foreground">No hunches submitted yet for this challenge.</p>
+                      ) : (
+                        <ul className="space-y-2 pt-2">
+                          {players.map(player => (
+                            <li key={player.id} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded-md">
+                              <span className="text-foreground font-medium">{player.screenName}</span>
+                              {submittedHunchPlayerIds.has(player.id) ? (
+                                <Badge variant="default" className="bg-primary text-primary-foreground">
+                                  <Check className="mr-1 h-3 w-3" /> Submitted
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">Pending</Badge>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
             )}
 
             {isGameMaster && (

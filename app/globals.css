@@ -205,4 +205,11 @@ body {
     padding-top: 8px;
     margin-top: 10px;
   }
+
+  .bg-hunch-parchment {
+    background-image: url('/hunch_bg1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
 }

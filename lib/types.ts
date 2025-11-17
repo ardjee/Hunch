@@ -1,5 +1,6 @@
 
 import type { Timestamp } from 'firebase/firestore';
+import type { AiProfileId } from '@/lib/ai/types';
 
 export interface Player {
   id: string; // Firestore document ID for the player subcollection
@@ -8,6 +9,8 @@ export interface Player {
   dailyCoins: number;
   isAdmitted?: boolean; // Relevant for lobby state, stored in Firestore
   createdAt?: Timestamp; // Firestore timestamp
+  isAi?: boolean;
+  aiProfileId?: AiProfileId;
 }
 
 export interface GameRound {
@@ -44,7 +47,7 @@ export interface Game {
 
   // Game State
   currentDay: number;
-  currentDayStep: number; // Tracks the current step of the day (1-5)
+  currentDayStep: number; // Tracks the current step of the day (1-6)
   currentChallengeDescription?: string | null;
   submittedHunches?: { [playerId: string]: string }; // PlayerId: HunchText for the current challenge
   currentChallengeActualResult?: string | null; // The actual result of the challenge, set by GM
@@ -62,6 +65,17 @@ export interface Game {
   } | null;
   magicianForcedSelections?: {
     [dayNumber: string]: MagicianForcedSelection[]
+  } | null;
+  magicianDiceRolls?: {
+    [dayNumber: string]: { // Day number as string
+      [playerId: string]: {
+        diceRoll: number; // The dice roll result (1-6)
+        cost: number; // Half the dice roll, rounded up
+      }
+    }
+  } | null;
+  votingLifeAwards?: {
+    [dayNumber: string]: string[]; // Array of playerIds who receive a life for voting correctly
   } | null;
   currentDayResults?: {
     actualResult: string;

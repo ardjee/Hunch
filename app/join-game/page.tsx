@@ -4,14 +4,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, LogIn, ListChecks, Loader2, Server, Trash2 } from 'lucide-react';
+import { ListChecks, Loader2, Server, Trash2, ArrowLeft } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase/client';
-import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, Timestamp, writeBatch, getDocs } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
 import {
   AlertDialog,
@@ -32,14 +30,10 @@ interface ActiveGame extends Game {
 }
 
 export default function JoinGamePage() {
-  const [screenName, setScreenName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
   const [isLoadingGames, setIsLoadingGames] = useState(true);
   const [isDeleteAllConfirmOpen, setIsDeleteAllConfirmOpen] = useState(false);
   const [isDeletingAllLobbies, setIsDeletingAllLobbies] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<ActiveGame | null>(null);
-  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -96,66 +90,7 @@ export default function JoinGamePage() {
   }, [toast]);
 
   const handleLobbyClick = (game: ActiveGame) => {
-    setSelectedGame(game);
-    setIsJoinDialogOpen(true);
-  };
-  
-  const handleJoinGame = async () => {
-    const trimmedScreenName = screenName.trim();
-    if (!selectedGame || !trimmedScreenName) {
-      toast({
-        title: "Screen Name Required",
-        description: "Please provide a screen name to join the lobby.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsLoading(true);
-
-    try {
-      if (!db) {
-        toast({
-          title: "Database Error",
-          description: "Could not connect to Firestore to join the game.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-      const gameRef = doc(db, 'games', selectedGame.id);
-      const gameSnap = await getDoc(gameRef);
-
-      if (gameSnap.exists()) {
-        const gameData = gameSnap.data() as Game;
-        if (gameData.status === 'lobby') {
-          router.push(`/lobby/${selectedGame.id}?screenName=${encodeURIComponent(trimmedScreenName)}`);
-        } else {
-          toast({
-            title: "Game Not Joinable",
-            description: "This game is already in progress or has concluded.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Game Not Found",
-          description: "The selected lobby no longer exists.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error joining game:", error);
-      toast({
-        title: "Error",
-        description: "Could not join the selected game. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setIsJoinDialogOpen(false);
-      setSelectedGame(null);
-      setScreenName('');
-    }
+    router.push(`/join-game/${game.id}`);
   };
 
 
@@ -210,6 +145,15 @@ export default function JoinGamePage() {
 
   return (
     <PageLayout title="Join The Hunch">
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={() => router.push('/')}
+        className="absolute top-4 left-4 z-20 flex items-center gap-2"
+      >
+        <ArrowLeft className="h-6 w-6" />
+        <span>Back</span>
+      </Button>
       <div className="flex justify-center">
         <Card className="w-full max-w-2xl shadow-xl">
           <CardHeader>
@@ -263,40 +207,6 @@ export default function JoinGamePage() {
            </CardFooter>
         </Card>
       </div>
-
-       <AlertDialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Join Lobby: {selectedGame?.gameName || 'Unnamed Lobby'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter your screen name to join this game lobby.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="screenName" className="flex items-center">
-              <User className="mr-2 h-4 w-4" /> Your Screen Name
-            </Label>
-            <Input
-              id="screenName"
-              type="text"
-              value={screenName}
-              onChange={(e) => setScreenName(e.target.value)}
-              placeholder="e.g., BraveSirRobin"
-              className="text-base"
-              maxLength={20}
-              required
-              onKeyDown={(e) => e.key === 'Enter' && handleJoinGame()}
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsJoinDialogOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleJoinGame} disabled={isLoading || !screenName.trim()}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Join Lobby
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
        <AlertDialog open={isDeleteAllConfirmOpen} onOpenChange={setIsDeleteAllConfirmOpen}>
         <AlertDialogContent>

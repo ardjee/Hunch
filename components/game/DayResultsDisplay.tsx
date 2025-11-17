@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Flame, ShieldCheck, Crown, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 
 interface DayResultsDisplayProps {
   results: NonNullable<Game['currentDayResults']>;
@@ -16,32 +16,17 @@ interface DayResultsDisplayProps {
 type PlayerHunchResult = NonNullable<Game['currentDayResults']>['playerHunches'][0];
 
 const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentDay }) => {
-  const [visiblePlayerResults, setVisiblePlayerResults] = useState<PlayerHunchResult[]>([]);
+  const sortedPlayerResults = useMemo(() => {
+    if (!results?.playerHunches) return [];
+    return [...results.playerHunches].sort((a, b) => {
+      if (a.isDisqualified && !b.isDisqualified) return 1;
+      if (!a.isDisqualified && b.isDisqualified) return -1;
 
-  useEffect(() => {
-    if (!results || !results.playerHunches || results.playerHunches.length === 0) {
-      setVisiblePlayerResults([]);
-      return;
-    }
-
-    // results.playerHunches is sorted best-first. Reverse for worst-first reveal.
-    const sortedHunchesForReveal = [...results.playerHunches].reverse();
-
-    setVisiblePlayerResults([]); // Reset visible results initially
-
-    const timeouts: NodeJS.Timeout[] = [];
-
-    sortedHunchesForReveal.forEach((playerResult, index) => {
-      const timeoutId = setTimeout(() => {
-        setVisiblePlayerResults(prev => [...prev, playerResult]);
-      }, index * 2000); // 2-second delay for each reveal
-      timeouts.push(timeoutId);
+      const aDiff = a.difference ?? Infinity;
+      const bDiff = b.difference ?? Infinity;
+      return aDiff - bDiff;
     });
-
-    return () => {
-      timeouts.forEach(clearTimeout); // Cleanup on unmount or if results change
-    };
-  }, [results]);
+  }, [results?.playerHunches]);
 
   if (!results || !results.playerHunches) {
     return (
@@ -58,9 +43,12 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
     );
   }
 
-  const actualBestPlayerId = results.playerHunches.length > 0 && results.playerHunches[0].difference !== null && !results.playerHunches[0].isDisqualified
-    ? results.playerHunches[0].playerId
-    : null;
+  const actualBestPlayerId =
+    sortedPlayerResults.length > 0 &&
+    sortedPlayerResults[0].difference !== null &&
+    !sortedPlayerResults[0].isDisqualified
+      ? sortedPlayerResults[0].playerId
+      : null;
 
   return (
     <Card className="bg-card border-2 border-border shadow-parchment mb-6">
@@ -75,11 +63,11 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
       </CardHeader>
       <CardContent className="p-4">
         <ScrollArea className="max-h-[60vh] md:h-[350px] pr-2">
-          {visiblePlayerResults.length === 0 && results.playerHunches.length > 0 && (
-            <p className="font-body text-muted-foreground text-center py-4">Revealing results...</p>
+          {sortedPlayerResults.length === 0 && (
+            <p className="font-body text-muted-foreground text-center py-4">No hunches were submitted.</p>
           )}
           <ul className="space-y-3">
-            {visiblePlayerResults.map((playerResult, displayIndex) => {
+            {sortedPlayerResults.map((playerResult, displayIndex) => {
               const isActualBestPlayer = playerResult.playerId === actualBestPlayerId;
               return (
                 <li

@@ -23,7 +23,7 @@ export const CHARACTERS_LIST: Character[] = [
   {
     id: 'merchant',
     name: 'The Merchant',
-    description: "The Merchant is the cunning big earner. Due to their smart investments, they will receive double daily coins at the start of the next day. There is no penalty for having multiple Merchants in a round.",
+    description: "The Merchant is the cunning big earner. Due to their smart investments, they will receive double daily coins at the start of the next day. However, if multiple Merchants are chosen, no daily coins are awarded to anyone the next day.",
     icon: Coins,
     imageUrl: '/merchant.png',
     dataAiHint: 'merchant character',
