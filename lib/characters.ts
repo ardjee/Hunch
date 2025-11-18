@@ -55,7 +55,7 @@ export const CHARACTERS_LIST: Character[] = [
   {
     id: 'trickster',
     name: 'The Trickster',
-    description: "Always knows how to turn luck to their favor. If they are the only Trickster, their submitted hunch for the day's challenge will be adjusted by 10% (up or down) to be closer to the actual result. If there are multiple Tricksters, they are disqualified from winning that round's challenge.",
+    description: "Always knows how to turn luck to their favor. If they are the only Trickster, their submitted hunch for the day's challenge will be adjusted by 10% (up or down) to be closer to the actual result. If there are multiple Tricksters, their votes do not count, they cannot earn a life by voting correctly, and they do not receive the 10% bonus adjustment, but their own scores still count if they were closest.",
     icon: Flame,
     imageUrl: '/trickster.png',
     dataAiHint: 'trickster character',

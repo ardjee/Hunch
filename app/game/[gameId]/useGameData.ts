@@ -671,26 +671,14 @@ export function useGameData() {
       let adjustedValue = hunchValue;
 
       if (playerId === singleTricksterId) {
-        // Adjust by 10% closer to actual result
+        // Adjust by 10% closer to actual result (only for single trickster)
         const difference = actualResult - hunchValue;
         const adjustment = difference * 0.1;
         adjustedValue = hunchValue + adjustment;
         displayedHunch = `${originalHunch} (Adjusted: ${adjustedValue.toFixed(2)})`;
         isTricksterAdjusted = true;
       }
-
-      // Check if multiple Tricksters (all are disqualified)
-      if (tricksterPlayerIds.length > 1 && tricksterPlayerIds.includes(playerId)) {
-        return {
-          playerId,
-          screenName,
-          originalHunch,
-          displayedHunch: 'DISQUALIFIED',
-          difference: Infinity,
-          isDisqualified: true,
-          isTricksterAdjusted: false,
-        };
-      }
+      // Note: Multiple tricksters don't get the 10% bonus, but their scores still count
 
       // Calculate difference from actual result
       const difference = Math.abs(actualResult - adjustedValue);
@@ -747,9 +735,19 @@ export function useGameData() {
         const playerVotes = currentGameData.playerVotes || {};
         
         // Find all players who voted for the best hunch player
+        // Exclude votes from tricksters if there are multiple tricksters
+        const hasMultipleTricksters = tricksterPlayerIds.length > 1;
         votersForBest = Object.entries(playerVotes)
-          .filter(([voterId, votedForId]) => votedForId === bestPlayerId)
-          .map(([voterId]) => voterId);
+          .filter(([voterId, votedForId]) => {
+            // Exclude trickster votes if there are multiple tricksters
+            if (hasMultipleTricksters && tricksterPlayerIds.includes(voterId)) {
+              return false;
+            }
+            return votedForId === bestPlayerId;
+          })
+          .map(([voterId]) => voterId)
+          // Also exclude tricksters from receiving life awards if there are multiple tricksters
+          .filter(voterId => !hasMultipleTricksters || !tricksterPlayerIds.includes(voterId));
       }
       
       // Apply player updates (only coins, not lives from voting)

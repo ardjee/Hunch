@@ -66,64 +66,51 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
           {sortedPlayerResults.length === 0 && (
             <p className="font-body text-muted-foreground text-center py-4">No hunches were submitted.</p>
           )}
-          <ul className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {sortedPlayerResults.map((playerResult, displayIndex) => {
               const isActualBestPlayer = playerResult.playerId === actualBestPlayerId;
               return (
-                <li
+                <div
                   key={playerResult.playerId}
-                  className={`p-3 rounded-md border-2 flex flex-col 
+                  className={`p-2 rounded-md border flex items-center justify-between
                     ${playerResult.isDisqualified ? 'bg-destructive/10 border-destructive/40 opacity-80' : 
                       isActualBestPlayer && playerResult.difference === 0 && !playerResult.isDisqualified ? 'bg-primary/10 border-primary/50 shadow-md ring-1 ring-primary/30' : 
                       isActualBestPlayer && !playerResult.isDisqualified ? 'bg-primary/10 border-primary/40 shadow-sm' :
                       'bg-card border-border'
                     }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center">
-                      <span className="text-lg font-headline text-foreground mr-2">
-                        {displayIndex + 1}. {playerResult.screenName}
-                      </span>
-                      {isActualBestPlayer && !playerResult.isDisqualified && (
-                         playerResult.difference === 0 ? 
-                         <Badge variant="default" className="bg-yellow-500 text-yellow-900 border-yellow-700">
-                           <Crown className="w-3 h-3 mr-1"/> Exact Hunch!
-                         </Badge> :
-                         <Badge variant="outline" className="border-primary text-primary bg-primary/20">
-                           <ShieldCheck className="w-3 h-3 mr-1"/> Closest
-                         </Badge>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-sm font-headline text-foreground">
+                      {displayIndex + 1}. {playerResult.screenName}
+                    </span>
+                    {isActualBestPlayer && !playerResult.isDisqualified && (
+                       playerResult.difference === 0 ? 
+                       <Badge variant="default" className="bg-yellow-500 text-yellow-900 border-yellow-700 text-xs">
+                         <Crown className="w-3 h-3 mr-1"/> Exact Hunch!
+                       </Badge> :
+                       <Badge variant="outline" className="border-primary text-primary bg-primary/20 text-xs">
+                         <ShieldCheck className="w-3 h-3 mr-1"/> Closest
+                       </Badge>
+                    )}
                     {playerResult.isDisqualified && (
                         <Badge variant="destructive" className="text-xs"><AlertTriangle className="w-3 h-3 mr-1" />Disqualified</Badge>
                     )}
-                  </div>
-                  
-                  {isActualBestPlayer && playerResult.difference !== null && !playerResult.isDisqualified && (
-                       <p className="text-xs font-body text-muted-foreground mb-1 italic">
-                         {playerResult.difference === 0 ? "A perfect prediction!" : "The most insightful hunch!"}
-                       </p>
-                  )}
-
-                  <div className="w-full h-px bg-border my-1.5"></div>
-
-                  <div className="flex justify-between items-baseline">
-                      <p className="text-sm font-body text-muted-foreground">
-                          Hunch: <strong className="text-foreground text-base">{playerResult.originalHunch || 'N/A'}</strong>
-                          {playerResult.isTricksterAdjusted && playerResult.originalHunch !== playerResult.displayedHunch && playerResult.displayedHunch && playerResult.displayedHunch !== "DISQUALIFIED" && (
-                          <span className="text-xs ml-1 text-primary italic">(Adjusted: <strong className="text-primary">{playerResult.displayedHunch.split('Adjusted: ')[1]?.replace(')','')}</strong>)</span>
-                          )}
-                      </p>
-                      {!playerResult.isDisqualified && playerResult.difference !== null && playerResult.difference !== Infinity && (
-                      <p className="text-sm font-body text-muted-foreground">
-                          Off by: <strong className="text-foreground text-base">{playerResult.difference.toFixed(0)}</strong>
-                      </p>
+                    <span className="text-xs font-body text-muted-foreground">
+                      Hunch: <strong className="text-foreground">{playerResult.originalHunch || 'N/A'}</strong>
+                      {playerResult.isTricksterAdjusted && playerResult.originalHunch !== playerResult.displayedHunch && playerResult.displayedHunch && playerResult.displayedHunch !== "DISQUALIFIED" && (
+                        <span className="ml-1 text-primary italic">(Adjusted: <strong className="text-primary">{playerResult.displayedHunch.split('Adjusted: ')[1]?.replace(')','')}</strong>)</span>
                       )}
+                    </span>
                   </div>
-                </li>
+                  {!playerResult.isDisqualified && playerResult.difference !== null && playerResult.difference !== Infinity && (
+                    <span className="text-xs font-body text-muted-foreground ml-2 whitespace-nowrap">
+                      Off by: <strong className="text-foreground">{playerResult.difference.toFixed(0)}</strong>
+                    </span>
+                  )}
+                </div>
               );
             })}
-          </ul>
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>

@@ -35,10 +35,9 @@ const CharacterDisplayCard: React.FC<{
   return (
     <Card
       className={`relative flex flex-col w-full overflow-hidden rounded-lg shadow-parchment border-2 transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-primary/30
-        ${isDisabled && !isSelected ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+        ${isDisabled && !isSelected ? 'opacity-60' : ''}
         ${isSelected ? 'border-primary bg-primary/10 ring-2 ring-primary' : 'bg-card border-amber-700 hover:border-amber-600'}`}
       style={{ width: '100%', minWidth: 0 }}
-      onClick={!isDisabled || isSelected ? onCardClick : undefined}
     >
       {/* Navigation Buttons inside the card */}
       {showNavButtons && (
@@ -92,21 +91,26 @@ const CharacterDisplayCard: React.FC<{
         <div className="text-xs font-body text-muted-foreground text-left leading-snug mb-3 flex-grow">
           {character.description}
         </div>
-        <Button
-          className="w-full mt-auto font-headline text-sm py-2.5 bg-transparent border-none shadow-none hover:bg-transparent text-primary-foreground mx-1"
-          style={{
-            backgroundImage: `url('${buttonImageUrl}')`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-          disabled={isDisabled && !isSelected}
-          onClick={onButtonClick}
-        >
-          {isLoading && !isSelected ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {isSelected ? <CheckCircle className="mr-2 h-4 w-4" /> : null}
-          {isSelected ? 'Selected' : `${buttonTextPrefix} ${characterName}`}
-        </Button>
+        <div className="w-full mt-auto flex items-center justify-center">
+          <div className="relative p-2">
+            <div className="absolute inset-0 rounded-full border-4 border-primary shadow-lg ring-2 ring-primary/30"></div>
+            <Button
+              className="relative w-full font-headline text-lg py-3 bg-transparent border-none shadow-none hover:bg-transparent text-primary-foreground mx-1 rounded-full"
+              style={{
+                backgroundImage: `url('${buttonImageUrl}')`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+              disabled={isDisabled && !isSelected}
+              onClick={onButtonClick}
+            >
+              {isLoading && !isSelected ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+              {isSelected ? <CheckCircle className="mr-2 h-5 w-5" /> : null}
+              <span className="font-bold text-xl">{isSelected ? 'Selected' : `${buttonTextPrefix} ${characterName}`}</span>
+            </Button>
+          </div>
+        </div>
       </div>
     </Card>
   );
@@ -434,7 +438,7 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
                   <div key={character.id} className="flex-[0_0_100%] min-w-0">
                     <CharacterDisplayCard
                       character={character}
-                      onCardClick={() => !isLoadingSelection && handleThiefTargetSelection(character.id)}
+                      onCardClick={() => {}}
                       onButtonClick={(e) => {
                           e.stopPropagation();
                           handleThiefTargetSelection(character.id);
@@ -504,7 +508,7 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
               <div className="w-full max-w-sm">
                 <CharacterDisplayCard
                   character={character}
-                  onCardClick={() => handleCharacterCardClick(character)}
+                  onCardClick={() => {}}
                   onButtonClick={(e) => {
                       e.stopPropagation();
                       handleCharacterCardClick(character);
