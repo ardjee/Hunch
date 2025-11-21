@@ -30,7 +30,15 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
 
   if (!results || !results.playerHunches) {
     return (
-      <Card className="bg-card border-2 border-border shadow-parchment">
+      <Card 
+        className="bg-card border-2 border-border shadow-parchment"
+        style={{
+          backgroundImage: "url('/hunch_bg1.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top right",
+          backgroundSize: "cover",
+        }}
+      >
         <CardHeader className="p-3 text-center">
           <div className="inline-block mx-auto title-plaque">
             RESULTS NOT AVAILABLE
@@ -51,7 +59,15 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
       : null;
 
   return (
-    <Card className="bg-card border-2 border-border shadow-parchment mb-6">
+    <Card 
+      className="bg-card border-2 border-border shadow-parchment mb-6 mt-8"
+      style={{
+        backgroundImage: "url('/hunch_bg1.png')",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "top right",
+        backgroundSize: "cover",
+      }}
+    >
       <CardHeader className="p-3 text-center">
         <div className="inline-block mx-auto title-plaque mb-3">
           Day {currentDay} RESULTS (STEP 5)
@@ -78,6 +94,12 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
                       isActualBestPlayer && !playerResult.isDisqualified ? 'bg-primary/10 border-primary/40 shadow-sm' :
                       'bg-card border-border'
                     }`}
+                  style={{
+                    backgroundImage: "url('/hunch_bg1.png')",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "top right",
+                    backgroundSize: "cover",
+                  }}
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-sm font-headline text-foreground">

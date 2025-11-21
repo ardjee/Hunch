@@ -59,7 +59,10 @@ function GamePageContent() {
 
   const [lastRevealedCharacterId, setLastRevealedCharacterId] = useState<string | null | undefined>(null);
   const [isRevealDialogOpen, setIsRevealDialogOpen] = useState(false);
+  const [isStandingsDialogOpen, setIsStandingsDialogOpen] = useState(false);
+  const [isUtilityPanelOpen, setIsUtilityPanelOpen] = useState(false);
   const [castleHeight, setCastleHeight] = useState<string>('55%');
+  const [isProcessingNextCharacter, setIsProcessingNextCharacter] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useAiPlayersController({
@@ -326,99 +329,213 @@ function GamePageContent() {
 
   return (
     <PageLayout title="The Hunch" showLogo={false}>
-      <div className="w-full space-y-6">
+      <div className="w-full space-y-6 overflow-x-hidden">
         {mainContent}
       </div>
 
-      {/* Collapsible Options Section */}
-      <Accordion type="multiple" className="w-full mt-6 space-y-2" defaultValue={[]}>
-        {/* Player Selection Status */}
-        {gameData.currentDayStep === 3 && !selectedCharacterInfoThisDay && (
-          <AccordionItem value="player-selections" className="border border-border rounded-lg px-4">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>Player Selections</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <PlayerSelectionStatusList
-                currentDay={gameData.currentDay}
-                characterSelectionStatus={characterSelectionStatus}
-                players={admittedPlayersFiltered}
-                selectionsForCurrentDay={selectionsForCurrentDayByPlayer}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        )}
+      {/* Floating Quick Panel */}
+      {isUtilityPanelOpen && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => setIsUtilityPanelOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-40 flex flex-col items-end gap-3">
+        <button
+          type="button"
+          onClick={() => setIsUtilityPanelOpen((prev) => !prev)}
+          aria-label="Toggle quick panel"
+          aria-expanded={isUtilityPanelOpen}
+          className="w-14 h-14 rounded-full border-2 border-amber-900 flex items-center justify-center transition-all hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
+            color: '#ffffff',
+            boxShadow: '0 8px 24px rgba(245, 158, 11, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+          }}
+        >
+          {isUtilityPanelOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+        <div
+          className={`w-80 max-w-[90vw] rounded-2xl border-2 border-amber-800 shadow-[0_10px_30px_rgba(80,50,20,0.4)] transition-all duration-200 ${
+            isUtilityPanelOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
+          }`}
+          style={{ 
+            backgroundColor: 'hsl(40, 60%, 95%)',
+            opacity: isUtilityPanelOpen ? 1 : 0,
+          }}
+        >
+          <Accordion 
+            type="multiple" 
+            className="w-full p-4 space-y-2" 
+            defaultValue={[]}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
+            }}
+          >
+            {gameData.currentDayStep === 3 && !selectedCharacterInfoThisDay && (
+              <AccordionItem 
+                value="player-selections" 
+                className="border border-border/60 rounded-lg px-3"
+                style={{
+                  backgroundImage: "url('/hunch_bg1.png')",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "top right",
+                  backgroundSize: "cover",
+                }}
+              >
+                <AccordionTrigger className="hover:no-underline py-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#ffffff' }}>
+                    <Users className="h-4 w-4" />
+                    <span>Player Selections</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <PlayerSelectionStatusList
+                    currentDay={gameData.currentDay}
+                    characterSelectionStatus={characterSelectionStatus}
+                    players={admittedPlayersFiltered}
+                    selectionsForCurrentDay={selectionsForCurrentDayByPlayer}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
-        {/* Player Standings */}
-        <AccordionItem value="standings" className="border border-border rounded-lg px-4">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>Player Standings</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <PlayerStatusDisplay 
+            <button
+              type="button"
+              onClick={() => setIsStandingsDialogOpen(true)}
+              className="w-full border border-border/60 rounded-lg px-3 py-2 text-left"
+              style={{
+                backgroundImage: "url('/hunch_bg1.png')",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "top right",
+                backgroundSize: "cover",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#ffffff' }}>
+                  <Users className="h-4 w-4" />
+                  <span>Player Standings</span>
+                </div>
+              </div>
+            </button>
+
+            {isCurrentUserGameMaster && (
+              <AccordionItem 
+                value="gm-controls" 
+                className="border border-border/60 rounded-lg px-3"
+                style={{
+                  backgroundImage: "url('/hunch_bg1.png')",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "top right",
+                  backgroundSize: "cover",
+                }}
+              >
+                <AccordionTrigger className="hover:no-underline py-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#ffffff' }}>
+                    <Settings className="h-4 w-4" />
+                    <span>Game Master Controls</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <GameMasterControls
+                    gameData={gameData}
+                    players={admittedPlayersFiltered}
+                    characterSelectionStatus={characterSelectionStatus}
+                    isCurrentUserGameMaster={isCurrentUserGameMaster}
+                    handleProceedToCharacterSelectionPhase={gameActions.handleProceedToCharacterSelectionPhase}
+                    handleProcessCharacterEffect={gameActions.handleProcessCharacterEffect}
+                    handleRevealDayResults={gameActions.handleRevealDayResults}
+                    handleShowVoteSummary={gameActions.handleShowVoteSummary}
+                    handleEndOfDayResolution={gameActions.handleEndOfDayResolution}
+                    getNextCharacterToReveal={gameActions.getNextCharacterToReveal}
+                    isLoadingProceedToCharacters={false}
+                    isLoadingCharacterProcessing={false}
+                    isLoadingDayResults={false}
+                    isLoadingVoteSummary={false}
+                    isLoadingEndOfDay={false}
+                    isLoadingJudgeSelection={false}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            <AccordionItem 
+              value="navigation" 
+              className="border border-border/60 rounded-lg px-3"
+              style={{
+                backgroundImage: "url('/hunch_bg1.png')",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "top right",
+                backgroundSize: "cover",
+              }}
+            >
+              <AccordionTrigger className="hover:no-underline py-2">
+                <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#ffffff' }}>
+                  <Menu className="h-4 w-4" />
+                  <span>Navigation</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="flex justify-center pt-2">
+                  <Button onClick={() => router.push('/')} variant="outline" size="lg" className="w-full">
+                    <Castle className="mr-2 h-5 w-5" /> Back to Main Screen
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </div>
+
+      {/* Player Standings Dialog */}
+      <Dialog
+        open={isStandingsDialogOpen}
+        onOpenChange={(open) => setIsStandingsDialogOpen(open)}
+      >
+        <DialogContent
+          className="!fixed inset-0 w-screen h-[100dvh] max-w-none max-h-none m-0 rounded-none p-4 sm:p-6 md:p-8 !translate-x-0 !translate-y-0 flex flex-col border-4 border-amber-800/60 [&>button]:text-amber-900 [&>button]:hover:text-amber-950 [&>button]:hover:bg-amber-200/50 relative"
+          style={{
+            backgroundImage: "url('/div-background.jpg')",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center center",
+            backgroundSize: "cover",
+          }}
+        >
+          <DialogHeader className="flex-shrink-0 relative z-10 bg-hunch-parchment p-4 sm:p-6 rounded-lg border-2 border-amber-800/60 shadow-lg">
+            <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-headline text-amber-900 flex items-center justify-center gap-2 sm:gap-3 text-center drop-shadow-sm">
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-amber-900" />
+              Player Standings
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4 flex-1 overflow-y-auto relative z-10 max-w-6xl mx-auto w-full">
+            <PlayerStatusDisplay
               key={standingsKey}
-              players={admittedPlayersFiltered} 
-              gameMasterId={gameData.gameMasterId} 
-              jackpotAmount={gameData.jackpotAmount || 0} 
+              players={admittedPlayersFiltered}
+              gameMasterId={gameData.gameMasterId}
+              jackpotAmount={gameData.jackpotAmount || 0}
             />
-          </AccordionContent>
-        </AccordionItem>
+          </div>
 
-        {/* Game Master Controls */}
-        {isCurrentUserGameMaster && (
-          <AccordionItem value="gm-controls" className="border border-border rounded-lg px-4">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span>Game Master Controls</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <GameMasterControls
-                gameData={gameData}
-                players={admittedPlayersFiltered}
-                characterSelectionStatus={characterSelectionStatus}
-                isCurrentUserGameMaster={isCurrentUserGameMaster}
-                handleProceedToCharacterSelectionPhase={gameActions.handleProceedToCharacterSelectionPhase}
-                handleProcessCharacterEffect={gameActions.handleProcessCharacterEffect}
-                handleRevealDayResults={gameActions.handleRevealDayResults}
-                handleShowVoteSummary={gameActions.handleShowVoteSummary}
-                handleEndOfDayResolution={gameActions.handleEndOfDayResolution}
-                getNextCharacterToReveal={gameActions.getNextCharacterToReveal}
-                isLoadingProceedToCharacters={false}
-                isLoadingCharacterProcessing={false}
-                isLoadingDayResults={false}
-                isLoadingVoteSummary={false}
-                isLoadingEndOfDay={false}
-                isLoadingJudgeSelection={false}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        )}
-
-        {/* Navigation */}
-        <AccordionItem value="navigation" className="border border-border rounded-lg px-4">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <Menu className="h-4 w-4" />
-              <span>Navigation</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="flex justify-center pt-2">
-              <Button onClick={() => router.push('/')} variant="outline" size="lg" className="w-full max-w-md">
-                <Castle className="mr-2 h-5 w-5" /> Back to Main Screen
-              </Button>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+          {/* Close button */}
+          <div className="flex justify-center mt-6 flex-shrink-0 relative z-10">
+            <button
+              type="button"
+              onClick={() => setIsStandingsDialogOpen(false)}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-900 flex items-center justify-center transition-all hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
+                color: '#ffffff',
+                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+              }}
+              aria-label="Close Player Standings"
+            >
+              <X className="h-8 w-8 sm:h-10 sm:w-10" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {gameData.currentDayStep === 4 && gameData.activelyRevealedCharacterId && (() => {
         const revealedCharacter = CHARACTERS_LIST.find(c => c.id === gameData.activelyRevealedCharacterId);
@@ -600,7 +717,7 @@ function GamePageContent() {
                 </div>
 
                 {revealedCharacter && (
-                  <div className="bg-hunch-parchment p-3 sm:p-4 rounded-lg border-2 border-primary/30">
+                  <div className="bg-hunch-parchment p-3 sm:p-4 rounded-lg border border-amber-800/10 shadow-lg">
                     <h3 className="font-headline text-lg sm:text-xl font-semibold mb-2 text-gray-900">Character Effects:</h3>
                     {playersWhoChoseCharacter.length === 0 ? (
                       <div className="flex justify-center items-center py-2">
@@ -725,6 +842,21 @@ function GamePageContent() {
                           <li className="text-red-600">-The thief stole all their coins</li>
                         )}
                       </ul>
+                    ) : revealedCharacter.id === 'magician' ? (
+                      <ul className="font-body text-base sm:text-lg leading-relaxed space-y-2 list-none pl-0">
+                        {playersWhoChoseCharacter.length === 1 && (
+                          <li className="text-green-600">-Can force a character of choice to a player in the next round</li>
+                        )}
+                        {playersWhoChoseCharacter.length >= 1 && (
+                          <li className="text-red-600">-Paid half the coins of their dice roll</li>
+                        )}
+                        {playersWhoChoseCharacter.length >= 2 && (
+                          <li className="text-red-600">-Can't force a player to choose a specific character</li>
+                        )}
+                        {wasStolenFromByThief && thiefCount === 1 && totalThiefCount === 1 && playersWhoChoseCharacter.length > 0 && singleThiefTarget && (
+                          <li className="text-red-600">-The thief stole all their coins</li>
+                        )}
+                      </ul>
                     ) : (
                       <>
                         <p className="font-body text-base sm:text-lg leading-relaxed whitespace-pre-line text-gray-900">
@@ -737,16 +869,124 @@ function GamePageContent() {
                     )}
                   </div>
                 )}
+
+                {/* Magician Dice Rolls */}
+                {revealedCharacter?.id === 'magician' && gameData.magicianDiceRolls?.[dayKey] && (() => {
+                  const magicianRolls = Object.entries(gameData.magicianDiceRolls[dayKey]);
+                  const magicianCount = magicianRolls.length;
+                  // Calculate scaling: base size for 2 magicians, scale down for more
+                  const scaleFactor = magicianCount > 2 ? Math.min(1, 2 / magicianCount) : 1;
+                  const cardMinWidth = magicianCount > 2 ? `${140 * scaleFactor}px` : '140px';
+                  const diceSize = magicianCount > 2 ? `${64 * scaleFactor}px` : '64px';
+                  const diceTextSize = magicianCount > 2 ? 'text-2xl' : 'text-3xl';
+                  const costTextSize = magicianCount > 2 ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl';
+                  const playerNameSize = magicianCount > 2 ? 'text-xs sm:text-sm' : 'text-sm sm:text-base';
+                  const cardPadding = magicianCount > 2 ? 'p-3' : 'p-4';
+                  const gapSize = magicianCount > 2 ? 'gap-2 sm:gap-3' : 'gap-4';
+                  const nameContainerHeight = magicianCount > 2 ? `${48 * scaleFactor}px` : '48px';
+                  
+                  return (
+                    <div className="bg-hunch-parchment p-3 sm:p-4 rounded-lg border border-amber-800/10 shadow-lg">
+                      <h3 className="font-headline text-lg sm:text-xl font-semibold mb-4 text-gray-900">Magician Dice Rolls:</h3>
+                      <div className={`flex flex-wrap ${gapSize} justify-center sm:justify-start`}>
+                        {magicianRolls.map(([playerId, diceRollData]) => {
+                          const magicianPlayer = admittedPlayersFiltered.find(p => p.id === playerId);
+                          if (!magicianPlayer || !diceRollData) return null;
+                          
+                          return (
+                            <div 
+                              key={playerId} 
+                              className={`flex flex-col items-center ${cardPadding} bg-amber-900/60 rounded-lg border-2 border-primary/50`}
+                              style={{ 
+                                minWidth: cardMinWidth,
+                                flex: magicianCount > 2 ? `0 0 calc(${100 / magicianCount}% - ${magicianCount === 3 ? '12px' : '16px'})` : undefined,
+                                maxWidth: magicianCount > 2 ? `calc(${100 / magicianCount}% - ${magicianCount === 3 ? '12px' : '16px'})` : undefined
+                              }}
+                            >
+                              <div className="mb-2 flex items-center justify-center" style={{ minHeight: nameContainerHeight }}>
+                                <p className={`font-body ${playerNameSize} font-semibold text-white drop-shadow-md text-center`}>
+                                  {magicianPlayer.screenName}
+                                </p>
+                              </div>
+                              <div 
+                                className="flex items-center justify-center border-3 border-primary rounded-lg bg-hunch-parchment mb-3 shadow-md"
+                                style={{ width: diceSize, height: diceSize }}
+                              >
+                                <span className={`${diceTextSize} font-bold text-gray-900 flex items-center justify-center gap-0.5 leading-none`}>
+                                  <span className="text-base sm:text-lg">🎲</span>
+                                  <span>{diceRollData.diceRoll}</span>
+                                </span>
+                              </div>
+                              <div className="text-center">
+                                <p className={`font-body ${costTextSize} font-bold text-red-600`}>
+                                  -{diceRollData.cost}
+                                </p>
+                                <p className="font-body text-xs text-muted-foreground">coins</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="flex justify-end mt-4 sm:mt-6 flex-shrink-0 relative z-10">
-                <Button 
-                  onClick={() => setIsRevealDialogOpen(false)} 
-                  size="lg" 
-                  className="font-headline w-full sm:w-auto bg-hunch-parchment text-amber-900 hover:bg-hunch-parchment/90 border-2 border-amber-800/60 shadow-lg font-bold text-lg sm:text-xl"
-                >
-                  Continue
-                </Button>
+                {isCurrentUserGameMaster ? (
+                  <Button 
+                    onClick={async () => {
+                      // Check if there's a next character to reveal
+                      const nextCharacterId = gameActions.getNextCharacterToReveal(gameData.activelyRevealedCharacterId);
+                      
+                      // If there's a next character and user is GameMaster, auto-process it
+                      if (nextCharacterId && isCurrentUserGameMaster && !gameData.playerAwaitingTargetSelection) {
+                        setIsProcessingNextCharacter(true);
+                        try {
+                          await gameActions.handleProcessCharacterEffect();
+                          // Dialog will automatically reopen with new character due to useEffect
+                          // Don't close the dialog - let it update with new content
+                        } catch (error) {
+                          console.error('Error processing next character:', error);
+                          setIsRevealDialogOpen(false);
+                        } finally {
+                          setIsProcessingNextCharacter(false);
+                        }
+                      } else {
+                        // No next character - all characters revealed, proceed directly to Step 5
+                        setIsProcessingNextCharacter(true);
+                        setIsRevealDialogOpen(false);
+                        try {
+                          await gameActions.handleRevealDayResults();
+                        } catch (error) {
+                          console.error('Error revealing day results:', error);
+                        } finally {
+                          setIsProcessingNextCharacter(false);
+                        }
+                      }
+                    }}
+                    disabled={isProcessingNextCharacter}
+                    size="lg" 
+                    className="font-headline w-full sm:w-auto bg-hunch-parchment text-amber-900 hover:bg-hunch-parchment/90 border-2 border-amber-800/60 shadow-lg font-bold text-lg sm:text-xl disabled:opacity-50"
+                  >
+                    {isProcessingNextCharacter ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin inline" />
+                        Processing...
+                      </>
+                    ) : (() => {
+                      const nextCharacterId = gameActions.getNextCharacterToReveal(gameData.activelyRevealedCharacterId);
+                      if (nextCharacterId && isCurrentUserGameMaster && !gameData.playerAwaitingTargetSelection) {
+                        return `Continue to ${CHARACTERS_LIST.find(c => c.id === nextCharacterId)?.name || 'Next Character'}`;
+                      }
+                      return 'Reveal Day Results';
+                    })()}
+                  </Button>
+                ) : (
+                  <div className="font-body text-base sm:text-lg text-amber-800 text-center w-full sm:w-auto px-4 py-2">
+                    Waiting for game host to continue...
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>

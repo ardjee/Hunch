@@ -87,7 +87,7 @@ export default {
       },
       boxShadow: {
         'inner-lg': 'inset 0 4px 10px 0 rgb(0 0 0 / 0.15)',
-        'parchment': '2px 2px 5px hsl(30, 40%, 30% / 0.3)',
+        'parchment': '0 2px 8px rgba(101, 67, 33, 0.12), 0 4px 16px rgba(101, 67, 33, 0.08)',
       },
       keyframes: {
         'accordion-down': {

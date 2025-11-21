@@ -38,20 +38,22 @@ const DiceRoll: React.FC<DiceRollProps> = ({ diceRoll, cost, playerName, size = 
 
   if (size === 'overview') {
     return (
-      <div className="flex flex-col items-center space-y-2 p-4 border-2 border-border rounded-lg bg-muted/30">
+      <div className="flex flex-col items-center h-full p-4 border-2 border-border rounded-lg bg-muted/30 min-h-[140px]">
         {playerName && (
-          <div className="text-sm font-semibold text-foreground">{playerName}</div>
+          <div className="text-sm font-semibold text-foreground text-center mb-4 break-words">{playerName}</div>
         )}
-        <div className="relative w-16 h-16 flex items-center justify-center">
-          <div className={cn(
-            "text-3xl font-bold transition-all duration-300",
-            isRolling ? "text-primary animate-pulse" : "text-foreground"
-          )}>
-            {displayValue}
+        <div className="flex flex-col items-center space-y-2 mt-auto">
+          <div className="relative w-16 h-16 flex items-center justify-center">
+            <div className={cn(
+              "text-3xl font-bold transition-all duration-300",
+              isRolling ? "text-primary animate-pulse" : "text-foreground"
+            )}>
+              {displayValue}
+            </div>
           </div>
-        </div>
-        <div className="text-2xl font-bold text-red-600">
-          {isRolling ? '...' : `${cost} coins`}
+          <div className="text-2xl font-bold text-red-600">
+            {isRolling ? '...' : `-${cost} coins`}
+          </div>
         </div>
       </div>
     );

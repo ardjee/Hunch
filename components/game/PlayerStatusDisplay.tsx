@@ -38,7 +38,15 @@ const PlayerStatusDisplay: React.FC<PlayerStatusListProps> = ({ players, gameMas
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4">
-        <div className="mb-4 p-3 bg-amber-100/60 rounded-md text-center border border-amber-600/50 shadow-inner-sm">
+        <div 
+          className="mb-4 p-3 rounded-md text-center border border-amber-600/50 shadow-inner-sm"
+          style={{
+            backgroundImage: "url('/hunch_bg1.png')",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "top right",
+            backgroundSize: "cover",
+          }}
+        >
           <div className="flex items-center justify-center text-base font-headline text-amber-800">
             <Gem className="mr-2 h-5 w-5 text-amber-700" />
             <span>JACKPOT: {jackpotAmount} Coins</span>
@@ -49,7 +57,16 @@ const PlayerStatusDisplay: React.FC<PlayerStatusListProps> = ({ players, gameMas
         ) : (
           <ul className="space-y-2.5">
             {sortedPlayers.map((player) => (
-              <li key={player.id} className="flex items-center justify-between p-2.5 bg-card rounded-md border border-border/70 shadow-sm hover:bg-muted/30 transition-colors">
+              <li 
+                key={player.id} 
+                className="flex items-center justify-between p-2.5 rounded-md border border-border/70 shadow-sm hover:opacity-90 transition-opacity"
+                style={{
+                  backgroundImage: "url('/hunch_bg1.png')",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "top right",
+                  backgroundSize: "cover",
+                }}
+              >
                 <div className="flex items-center space-x-2.5">
                   <Avatar className="h-8 w-8 border border-border/50">
                     <AvatarImage src={`https://placehold.co/40x40/f0e4c0/8c5a2b.png?text=${getInitials(player.screenName)}`} alt={player.screenName} data-ai-hint="avatar medieval" />

@@ -37,7 +37,14 @@ const CharacterDisplayCard: React.FC<{
       className={`relative flex flex-col w-full overflow-hidden rounded-lg shadow-parchment border-2 transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-primary/30
         ${isDisabled && !isSelected ? 'opacity-60' : ''}
         ${isSelected ? 'border-primary bg-primary/10 ring-2 ring-primary' : 'bg-card border-amber-700 hover:border-amber-600'}`}
-      style={{ width: '100%', minWidth: 0 }}
+      style={{ 
+        width: '100%', 
+        minWidth: 0,
+        backgroundImage: "url('/hunch_bg1.png')",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "top right",
+        backgroundSize: "cover",
+      }}
     >
       {/* Navigation Buttons inside the card */}
       {showNavButtons && (
@@ -80,7 +87,15 @@ const CharacterDisplayCard: React.FC<{
           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
         />
       </div>
-      <div className="p-4 flex flex-col items-center flex-1 text-center">
+      <div 
+        className="p-4 flex flex-col items-center flex-1 text-center"
+        style={{
+          backgroundImage: "url('/hunch_bg1.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top right",
+          backgroundSize: "cover",
+        }}
+      >
         <p className="text-sm font-body text-muted-foreground">The</p>
         <h3 className="text-2xl font-headline text-card-foreground mt-0 mb-1 tracking-wide">
           {characterName}
@@ -479,12 +494,12 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
   // Step 3: Default - Choose Character (PlayerSelectionStatusList is now rendered by parent page.tsx for this view)
 
   return (
-    <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+    <div className="w-full h-full flex items-center justify-center relative overflow-hidden py-8" style={{ paddingTop: '3rem', paddingBottom: '2rem' }}>
       {/* Navigation Arrows */}
       <Button
         variant="outline"
         size="icon"
-        className="absolute left-4 top-[60%] -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
         onClick={scrollPrev}
         disabled={selectedIndex === 0}
       >
@@ -493,19 +508,19 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
       <Button
         variant="outline"
         size="icon"
-        className="absolute right-4 top-[60%] -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
         onClick={scrollNext}
         disabled={selectedIndex === characters.length - 1}
       >
         <ChevronRight className="h-7 w-7" />
       </Button>
 
-      {/* Carousel Container */}
+      {/* Carousel Container - Centered */}
       <div className="w-full max-w-md mx-auto h-full flex items-center justify-center overflow-hidden px-4" ref={emblaRef}>
-        <div className="flex h-full w-full">
+        <div className="flex h-full w-full items-center">
           {characters.map((character, index) => (
             <div key={character.id} className="flex-[0_0_100%] min-w-0 w-full flex items-center justify-center p-4">
-              <div className="w-full max-w-sm">
+              <div className="w-full max-w-sm mx-auto">
                 <CharacterDisplayCard
                   character={character}
                   onCardClick={() => {}}
