@@ -115,6 +115,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    overflow: hidden;
   }
    .card, .button { /* More specific button styling will be in components */
     @apply shadow-md; /* Subtle shadow, can be customized */
@@ -154,27 +155,25 @@ body {
   }
 
   .hunch-box {
-    /* Parchment Background Design - same as original page background */
-    background-image: url('/hunch_bg1.png');
-    background-repeat: no-repeat;
-    background-position: top right;
-    background-size: cover;
-    background-color: transparent !important; /* Override any card background */
-    
+    /* Semi-transparent background to let page background show through */
+    background-image: none !important;
+    background-color: hsla(35, 30%, 80%, 0.45) !important;
+    backdrop-filter: blur(2px);
+
     /* Restore borders and rounded corners for cards */
-    border: 2px solid hsl(35, 35%, 60%);
+    border: 2px solid hsl(30, 30%, 50%, 0.5);
     border-radius: 12px;
-    
+
     /* Standard card padding */
-    padding: 1.5rem !important;
-    
+    padding: 0.75rem !important;
+
     /* Subtle shadow for depth */
-    box-shadow: 
-      0 3px 12px rgba(101, 67, 33, 0.18),
-      0 6px 24px rgba(101, 67, 33, 0.12) !important;
-    
+    box-shadow:
+      0 3px 12px rgba(101, 67, 33, 0.15),
+      0 6px 24px rgba(101, 67, 33, 0.08) !important;
+
     color: hsl(35, 45%, 20%);
-    
+
     position: relative;
     font-family: 'Georgia', serif;
   }
@@ -207,9 +206,7 @@ body {
   }
 
   .bg-hunch-parchment {
-    background-image: url('/hunch_bg1.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-color: hsla(35, 30%, 80%, 0.45);
+    backdrop-filter: blur(2px);
   }
 }

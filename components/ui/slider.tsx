@@ -14,7 +14,7 @@ const Slider = React.forwardRef<
   const thumbImageUrl = "/slider-button.png";
 
   return (
-    <div className="relative w-full h-16 flex items-center">
+    <div className="relative w-full h-12 flex items-center">
       {/* Visual Rail Background */}
       <div 
         className="absolute w-full h-full bg-contain bg-no-repeat bg-center"
@@ -33,8 +33,8 @@ const Slider = React.forwardRef<
         <SliderPrimitive.Track className="relative h-full w-full grow overflow-hidden rounded-full bg-transparent">
           {/* We don't need a visible range, the thumb position is enough */}
         </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb 
-          className="block h-16 w-16 rounded-full ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-contain bg-no-repeat bg-center"
+        <SliderPrimitive.Thumb
+          className="block h-12 w-12 rounded-full ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-contain bg-no-repeat bg-center"
           style={{ backgroundImage: `url('${thumbImageUrl}')` }}
         />
       </SliderPrimitive.Root>

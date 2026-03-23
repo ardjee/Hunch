@@ -58,6 +58,11 @@ export interface Game {
     };
   };
   jackpotAmount?: number; // Amount of coins in the central jackpot
+  jackpotLog?: Array<{
+    description: string;
+    amount: number; // positive = added to jackpot, negative = removed
+    icon?: string;  // character id for icon display
+  }> | null;
   activelyRevealedCharacterId?: string | null; // ID of the character currently being revealed/processed
   playerAwaitingTargetSelection?: {
       playerId: string;

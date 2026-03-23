@@ -27,23 +27,21 @@ const CharacterDisplayCard: React.FC<{
   onNextClick?: () => void;
   isPrevDisabled?: boolean;
   isNextDisabled?: boolean;
-}> = ({ character, onCardClick, onButtonClick, isDisabled, isSelected, isLoading, buttonTextPrefix, showNavButtons, onPrevClick, onNextClick, isPrevDisabled, isNextDisabled }) => {
+  compact?: boolean;
+}> = ({ character, onCardClick, onButtonClick, isDisabled, isSelected, isLoading, buttonTextPrefix, showNavButtons, onPrevClick, onNextClick, isPrevDisabled, isNextDisabled, compact }) => {
   const bucket = "the-hunch-3cdb0.appspot.com";
   const buttonImageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/button1.png?alt=media`;
   const characterName = character.name.replace(/^The\s/, '');
 
   return (
     <Card
-      className={`relative flex flex-col w-full overflow-hidden rounded-lg shadow-parchment border-2 transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-primary/30
+      className={`relative flex flex-col w-full overflow-hidden rounded-lg shadow-[0_4px_16px_rgba(40,25,10,0.35)] border-2 transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-[0_8px_24px_rgba(40,25,10,0.5)]
         ${isDisabled && !isSelected ? 'opacity-60' : ''}
-        ${isSelected ? 'border-primary bg-primary/10 ring-2 ring-primary' : 'bg-card border-amber-700 hover:border-amber-600'}`}
-      style={{ 
-        width: '100%', 
+        ${isSelected ? 'border-primary bg-primary/10 ring-2 ring-primary' : 'border-border/50 hover:border-border'}`}
+      style={{
+        width: '100%',
         minWidth: 0,
-        backgroundImage: "url('/hunch_bg1.png')",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "top right",
-        backgroundSize: "cover",
+        minHeight: 'calc(100dvh - 20rem)',
       }}
     >
       {/* Navigation Buttons inside the card */}
@@ -76,7 +74,7 @@ const CharacterDisplayCard: React.FC<{
         </>
       )}
 
-      <div className="relative w-full h-64 bg-muted/30" style={{ minHeight: '16rem' }}>
+      <div className="relative w-full flex-1 bg-muted/30" style={{ minHeight: '13rem' }}>
         <Image
           src={character.imageUrl}
           alt={character.name}
@@ -87,25 +85,21 @@ const CharacterDisplayCard: React.FC<{
           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
         />
       </div>
-      <div 
-        className="p-4 flex flex-col items-center flex-1 text-center"
-        style={{
-          backgroundImage: "url('/hunch_bg1.png')",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "top right",
-          backgroundSize: "cover",
-        }}
+      <div
+        className="p-3 flex flex-col items-center flex-1 text-center bg-card/60 backdrop-blur-sm"
       >
-        <p className="text-sm font-body text-muted-foreground">The</p>
-        <h3 className="text-2xl font-headline text-card-foreground mt-0 mb-1 tracking-wide">
+        <p className="text-xs font-body text-muted-foreground">The</p>
+        <h3 className="text-xl font-headline text-card-foreground mt-0 mb-1 tracking-wide">
           {characterName}
         </h3>
-        <div className="relative h-6 w-6 text-accent mb-3">
+        <div className="relative h-5 w-5 text-accent mb-2">
           <character.icon className="w-full h-full" />
         </div>
-        <div className="text-xs font-body text-muted-foreground text-left leading-snug mb-3 flex-grow">
-          {character.description}
-        </div>
+        {!compact && (
+          <div className="text-xs font-body text-muted-foreground text-left leading-snug mb-3 flex-grow">
+            {character.description}
+          </div>
+        )}
         <div className="w-full mt-auto flex items-center justify-center">
           <div className="relative p-2">
             <div className="absolute inset-0 rounded-full border-4 border-primary shadow-lg ring-2 ring-primary/30"></div>
@@ -148,6 +142,7 @@ interface CharacterSelectionProps {
   isCurrentUserGameMaster?: boolean; // Optional
   getNextCharacterToReveal?: (currentlyRevealedId: string | null | undefined) => string | null; // Optional
   forcedCharacterId?: string; // Optional: The character this player is forced to select
+  onProceedToNextStep?: () => Promise<void>; // GM button to proceed from Step 3 to Step 4
 }
 
 const CharacterSelection: React.FC<CharacterSelectionProps> = ({
@@ -164,6 +159,7 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
   isCurrentUserGameMaster,
   getNextCharacterToReveal,
   forcedCharacterId,
+  onProceedToNextStep,
 }) => {
   const [isPickingThiefTarget, setIsPickingThiefTarget] = useState(false);
 
@@ -372,30 +368,22 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
 
   // Step 3: Character Selected by Current Player
   if (selectedCharacterInfoThisDay) {
-    const selectedChar = characters.find(c => c.id === selectedCharacterInfoThisDay.characterId);
-    let description = `You have chosen: <strong class="text-primary">${selectedChar?.name || 'Unknown Character'}</strong>.`;
-    if (selectedCharacterInfoThisDay.characterId === 'thief' && selectedCharacterInfoThisDay.thiefTargetCharacterId) {
-        const targetChar = characters.find(c => c.id === selectedCharacterInfoThisDay.thiefTargetCharacterId);
-        description += ` You plan to rob <strong class="text-accent">The ${targetChar?.name || 'Unknown Target'}</strong>.`;
-    }
-
     const allPlayersSelectedCharacterThisDay = characterSelectionStatus.totalAdmittedPlayers > 0 &&
     characterSelectionStatus.playersWhoSelectedForCurrentDay === characterSelectionStatus.totalAdmittedPlayers;
 
-    if (allPlayersSelectedCharacterThisDay) {
-        description += `<br />All players have selected. Waiting for the Game Master to start processing character effects (Step 4).`;
-    } else {
-        description += `<br />Waiting for other players to make their choice.`;
-    }
-
     return (
-      <Card className="hunch-box shadow-parchment bg-card">
+      <Card className="hunch-box">
         <CardHeader>
           <CardTitle className="text-xl font-headline text-primary flex items-center">
             <CheckCircle className="w-6 h-6 mr-2 text-primary" />
             Character Selected (Step {displayRoundNumber}) for Day {currentDay}
           </CardTitle>
-          <CardDescription className="font-body" dangerouslySetInnerHTML={{ __html: description }} />
+          <CardDescription className="font-body">
+            Your character is locked in!
+            {!allPlayersSelectedCharacterThisDay && (
+              <> Waiting for other players to make their choice.</>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <PlayerSelectionStatusList
@@ -405,6 +393,15 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
              selectionsForCurrentDay={selectionsForCurrentDay}
              isEmbedded
           />
+          {allPlayersSelectedCharacterThisDay && isCurrentUserGameMaster && onProceedToNextStep && (
+            <Button
+              onClick={onProceedToNextStep}
+              className="w-full mt-4 font-headline text-lg"
+              size="lg"
+            >
+              Begin Character Effects (Step 4)
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -414,101 +411,76 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
   if (isPickingThiefTarget) {
 
     return (
-      <Card className="shadow-parchment bg-card border-accent/50 hunch-box">
-        <CardHeader>
-          <CardTitle className="text-xl font-headline text-accent flex items-center">
-            <HandCoins className="w-6 h-6 mr-2" />
-            Thief: Choose Target (Part of Step {displayRoundNumber})
-          </CardTitle>
-          <CardDescription className="font-body">
-            You've chosen to be The Thief. Swipe to browse and select which character type you will attempt to rob today.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="relative">
-          {/* Navigation Arrows */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute left-4 top-[60%] -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
-            onClick={thiefScrollPrev}
-            disabled={thiefSelectedIndex === 0}
-          >
-            <ChevronLeft className="h-7 w-7" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-4 top-[60%] -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
-            onClick={thiefScrollNext}
-            disabled={thiefSelectedIndex === availableTargets.length - 1}
-          >
-            <ChevronRight className="h-7 w-7" />
-          </Button>
+      <div className="w-full relative overflow-hidden">
+        {/* Navigation Arrows */}
+        <Button
+          size="icon"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 rounded-full shadow-lg border-2 border-foreground text-foreground h-14 w-14 disabled:opacity-100 disabled:text-foreground/30 disabled:border-foreground/30"
+          style={{ backgroundColor: 'hsl(40, 75%, 94%)' }}
+          onClick={thiefScrollPrev}
+          disabled={thiefSelectedIndex === 0}
+        >
+          <ChevronLeft className="h-7 w-7" />
+        </Button>
+        <Button
+          size="icon"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 rounded-full shadow-lg border-2 border-foreground text-foreground h-14 w-14 disabled:opacity-100 disabled:text-foreground/30 disabled:border-foreground/30"
+          style={{ backgroundColor: 'hsl(40, 75%, 94%)' }}
+          onClick={thiefScrollNext}
+          disabled={thiefSelectedIndex === availableTargets.length - 1}
+        >
+          <ChevronRight className="h-7 w-7" />
+        </Button>
 
-          {/* Carousel Container */}
-          <div className="mb-4">
-            <div className="overflow-hidden" ref={thiefEmblaRef}>
-              <div className="flex touch-pan-y">
-                {availableTargets.map((character) => (
-                  <div key={character.id} className="flex-[0_0_100%] min-w-0">
-                    <CharacterDisplayCard
-                      character={character}
-                      onCardClick={() => {}}
-                      onButtonClick={(e) => {
-                          e.stopPropagation();
-                          handleThiefTargetSelection(character.id);
-                      }}
-                      isDisabled={isLoadingSelection}
-                      isSelected={false}
-                      isLoading={isLoadingSelection}
-                      buttonTextPrefix="Rob"
-                      showNavButtons={false}
-                    />
-                  </div>
-                ))}
+        <p className="text-center font-headline text-accent text-sm mb-2">Choose a target to rob</p>
+
+        {/* Carousel Container */}
+        <div className="w-full max-w-md mx-auto overflow-hidden px-4" ref={thiefEmblaRef}>
+          <div className="flex w-full">
+            {availableTargets.map((character) => (
+              <div key={character.id} className="flex-[0_0_100%] min-w-0 w-full px-4 h-full">
+                <div className="w-full max-w-sm mx-auto h-full">
+                  <CharacterDisplayCard
+                    character={character}
+                    onCardClick={() => {}}
+                    onButtonClick={(e) => {
+                        e.stopPropagation();
+                        handleThiefTargetSelection(character.id);
+                    }}
+                    isDisabled={isLoadingSelection}
+                    isSelected={false}
+                    isLoading={isLoadingSelection}
+                    buttonTextPrefix="Rob"
+                    showNavButtons={false}
+                    compact
+                  />
+                </div>
               </div>
-            </div>
-
-            {/* Dots Navigation - below the carousel */}
-            <div className="flex justify-center gap-2 mt-4">
-              {thiefScrollSnaps.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === thiefSelectedIndex ? 'bg-accent w-6' : 'bg-accent/30'
-                  }`}
-                  onClick={() => thiefScrollTo(index)}
-                />
-              ))}
-            </div>
+            ))}
           </div>
-
-          <Button variant="outline" onClick={cancelThiefTargetSelection} className="w-full font-headline">
-            <XCircle className="mr-2 h-4 w-4" /> Cancel Thief Role
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   // Step 3: Default - Choose Character (PlayerSelectionStatusList is now rendered by parent page.tsx for this view)
 
   return (
-    <div className="w-full h-full flex items-center justify-center relative overflow-hidden py-8" style={{ paddingTop: '3rem', paddingBottom: '2rem' }}>
+    <div className="w-full relative overflow-hidden">
       {/* Navigation Arrows */}
       <Button
-        variant="outline"
         size="icon"
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 rounded-full shadow-lg border-2 border-foreground text-foreground h-14 w-14 disabled:opacity-100 disabled:text-foreground/30 disabled:border-foreground/30"
+        style={{ backgroundColor: 'hsl(40, 75%, 94%)' }}
         onClick={scrollPrev}
         disabled={selectedIndex === 0}
       >
         <ChevronLeft className="h-7 w-7" />
       </Button>
       <Button
-        variant="outline"
         size="icon"
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 border-2 border-primary-foreground h-14 w-14"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 rounded-full shadow-lg border-2 border-foreground text-foreground h-14 w-14 disabled:opacity-100 disabled:text-foreground/30 disabled:border-foreground/30"
+        style={{ backgroundColor: 'hsl(40, 75%, 94%)' }}
         onClick={scrollNext}
         disabled={selectedIndex === characters.length - 1}
       >
@@ -516,10 +488,10 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({
       </Button>
 
       {/* Carousel Container - Centered */}
-      <div className="w-full max-w-md mx-auto h-full flex items-center justify-center overflow-hidden px-4" ref={emblaRef}>
-        <div className="flex h-full w-full items-center">
+      <div className="w-full max-w-md mx-auto overflow-hidden px-4" ref={emblaRef}>
+        <div className="flex w-full">
           {characters.map((character, index) => (
-            <div key={character.id} className="flex-[0_0_100%] min-w-0 w-full flex items-center justify-center p-4">
+            <div key={character.id} className="flex-[0_0_100%] min-w-0 w-full px-4">
               <div className="w-full max-w-sm mx-auto">
                 <CharacterDisplayCard
                   character={character}

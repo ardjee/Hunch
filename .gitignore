@@ -47,3 +47,14 @@ firestore-debug.log
 # large/binary artifacts
 hunch_vs.zip
 *.zip
+
+# dev tooling (not part of project)
+everything-claude-code/
+.agents/
+.playwright-mcp/
+
+# test artifacts
+test-results/
+
+# dev screenshots
+screen_*.png

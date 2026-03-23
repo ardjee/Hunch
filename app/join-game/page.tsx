@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ListChecks, Loader2, Server, Trash2, ArrowLeft } from 'lucide-react';
+import { Castle, ListChecks, Loader2, Server, Trash2, ArrowLeft } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase/client';
 import { collection, query, where, orderBy, onSnapshot, Timestamp, writeBatch, getDocs } from 'firebase/firestore';
@@ -145,15 +145,6 @@ export default function JoinGamePage() {
 
   return (
     <PageLayout title="Join The Hunch">
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={() => router.push('/')}
-        className="absolute top-4 left-4 z-20 flex items-center gap-2"
-      >
-        <ArrowLeft className="h-6 w-6" />
-        <span>Back</span>
-      </Button>
       <div className="flex justify-center">
         <Card className="w-full max-w-2xl shadow-xl">
           <CardHeader>
@@ -164,7 +155,7 @@ export default function JoinGamePage() {
               Click a lobby to join.
             </CardDescription>
           </CardHeader>
-          <CardContent className="max-h-[60vh] md:max-h-96 overflow-y-auto space-y-3 pr-2">
+          <CardContent className="max-h-[50vh] overflow-y-auto space-y-3 pr-2">
             {isLoadingGames && (
               <div className="flex items-center justify-center p-4">
                 <Loader2 className="mr-2 h-6 w-6 animate-spin" />
@@ -172,7 +163,13 @@ export default function JoinGamePage() {
               </div>
             )}
             {!isLoadingGames && activeGames.length === 0 && (
-              <p className="text-muted-foreground text-center p-4">No active lobbies found. Why not start one?</p>
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <Castle className="h-10 w-10 text-muted-foreground/50" />
+                <p className="text-muted-foreground text-sm">No active lobbies found.</p>
+                <Button size="sm" className="hunch-glow" onClick={() => router.push('/create-game')}>
+                  Create a Game
+                </Button>
+              </div>
             )}
             {!isLoadingGames && activeGames.map((game) => (
               <Button
@@ -193,18 +190,23 @@ export default function JoinGamePage() {
               </Button>
             ))}
           </CardContent>
-           <CardFooter className="pt-4">
-             <Button
+          <CardFooter className="flex gap-3 pt-4">
+            <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back
+            </Button>
+            {activeGames.length > 0 && (
+              <Button
                 variant="destructive"
                 onClick={() => setIsDeleteAllConfirmOpen(true)}
-                disabled={isDeletingAllLobbies || isLoadingGames || activeGames.length === 0}
-                className="w-full"
-                size="sm"
+                disabled={isDeletingAllLobbies || isLoadingGames}
+                className="flex-1"
+                size="default"
               >
                 {isDeletingAllLobbies ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                {isDeletingAllLobbies ? 'Deleting Lobbies...' : 'Delete All Active Lobbies'}
+                {isDeletingAllLobbies ? 'Deleting...' : 'Delete All'}
               </Button>
-           </CardFooter>
+            )}
+          </CardFooter>
         </Card>
       </div>
 

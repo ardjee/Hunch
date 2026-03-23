@@ -528,16 +528,40 @@ export function useGameData() {
         }
       }
       
-      // Update jackpot
+      // Update jackpot and log
       if (jackpotDelta !== 0) {
         const currentJackpot = currentGameData.jackpotAmount || 0;
         const newJackpot = Math.max(0, currentJackpot + jackpotDelta);
         transaction.update(gameDocRef, { jackpotAmount: newJackpot });
       }
 
+      // Build jackpot log entry
+      let jackpotLogEntry: { description: string; amount: number; icon?: string } | null = null;
+      if (jackpotDelta !== 0) {
+        if (characterToProcess === 'thief' && characterCount > 1) {
+          jackpotLogEntry = { description: `${characterCount} Thieves lost half their coins to the jackpot`, amount: jackpotDelta, icon: 'thief' };
+        } else if (characterToProcess === 'monarch' && characterCount > 1) {
+          jackpotLogEntry = { description: `${characterCount} Monarchs lost all coins to the jackpot`, amount: jackpotDelta, icon: 'monarch' };
+        } else if (characterToProcess === 'peasant') {
+          jackpotLogEntry = { description: `Peasants paid tax to the jackpot (no single Monarch)`, amount: jackpotDelta, icon: 'peasant' };
+        } else if (characterToProcess === 'saint' && characterCount === 1) {
+          jackpotLogEntry = { description: `The Saint doubled the jackpot`, amount: jackpotDelta, icon: 'saint' };
+        } else if (characterToProcess === 'saint' && characterCount > 1) {
+          jackpotLogEntry = { description: `${characterCount} Saints: jackpot halved, each contributed coins`, amount: jackpotDelta, icon: 'saint' };
+        } else if (characterToProcess === 'magician') {
+          jackpotLogEntry = { description: `Magician${characterCount > 1 ? 's' : ''} paid dice cost to the jackpot`, amount: jackpotDelta, icon: 'magician' };
+        }
+      }
+
       let gameUpdates: Partial<Game> = {
         activelyRevealedCharacterId: characterToProcess,
       };
+
+      // Append jackpot log entry if any
+      if (jackpotLogEntry) {
+        const existingLog = currentGameData.jackpotLog || [];
+        gameUpdates.jackpotLog = [...existingLog, jackpotLogEntry];
+      }
       if (currentGameData.currentDayStep === 3) {
         gameUpdates.currentDayStep = 4;
       }
@@ -717,14 +741,19 @@ export function useGameData() {
       let jackpotDelta = 0;
       const playerUpdates: Record<string, { dailyCoins?: number; lives?: number }> = {};
       
-      // Award 5 coins to jackpot for each hunch within 10% of actual result
+      // Award 5 coins to jackpot if any hunch is within 10% of actual result (flat, not cumulative)
       const tenPercentThreshold = actualResult * 0.1;
+      let hasAccurateHunch = false;
       for (const hunchResult of playerHunches) {
         if (!hunchResult.isDisqualified && hunchResult.difference !== null && hunchResult.difference !== Infinity) {
           if (hunchResult.difference <= tenPercentThreshold) {
-            jackpotDelta += 5;
+            hasAccurateHunch = true;
+            break;
           }
         }
+      }
+      if (hasAccurateHunch) {
+        jackpotDelta += 5;
       }
       
       // Store voting-based life awards to be applied in phase 6
@@ -772,11 +801,22 @@ export function useGameData() {
         [currentDayKey]: votersForBest
       };
       
+      // Add jackpot log entry for accurate hunch bonus
+      let updatedJackpotLog = currentGameData.jackpotLog || [];
+      if (hasAccurateHunch) {
+        updatedJackpotLog = [...updatedJackpotLog, {
+          description: `A hunch was within 10% of the result`,
+          amount: 5,
+          icon: 'hunch',
+        }];
+      }
+
       // Update game with results
       transaction.update(gameRef, {
         currentDayStep: 5,
         currentDayResults,
         votingLifeAwards: updatedVotingAwards,
+        ...(updatedJackpotLog.length > 0 ? { jackpotLog: updatedJackpotLog } : {}),
       });
     });
 
@@ -798,6 +838,13 @@ export function useGameData() {
       currentDayStep: 6,
     });
   }, [gameId, gameData?.currentDayResults, toast]);
+
+  const handleShowJackpotSummary = useCallback(async () => {
+    if (!db) return;
+    await updateDoc(doc(db, 'games', gameId), {
+      currentDayStep: 7,
+    });
+  }, [gameId, db]);
 
   const handleEndOfDayResolution = useCallback(async () => {
     if (!db) return;
@@ -884,6 +931,7 @@ export function useGameData() {
             playerVotes: {},
             playerAwaitingTargetSelection: null,
             currentDayResults: null,
+            jackpotLog: null,
           }
         : { status: 'concluded' };
 
@@ -911,6 +959,7 @@ export function useGameData() {
     handleMagicianSelection,
     handleRevealDayResults,
     handleShowVoteSummary,
+    handleShowJackpotSummary,
     handleEndOfDayResolution,
     getNextCharacterToReveal,
   };

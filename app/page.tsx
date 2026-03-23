@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, Users, LogIn, Loader2, ScrollText, Swords } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/client';
 import { doc, getDoc } from 'firebase/firestore';
@@ -103,24 +104,23 @@ export default function HomePage() {
 
   return (
     <PageLayout>
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
         {isLoadingRejoin && (
-          <div className="text-center text-muted-foreground mb-6 p-4 flex items-center justify-center font-body">
+          <div className="text-center text-muted-foreground p-2 flex items-center justify-center font-body">
             <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Seeking active quests...
           </div>
         )}
         {!isLoadingRejoin && rejoinInfo && (
-          <Card className="hunch-box w-full"> {/* Applied hunch-box, removed other conflicting classes */}
-            <CardHeader className="text-center p-4">
-              <CardTitle className="text-2xl font-headline text-primary">Welcome Back, {rejoinInfo.screenName}!</CardTitle>
+          <Card className="hunch-box w-full">
+            <CardHeader className="text-center p-3">
+              <CardTitle className="text-xl font-headline text-primary">Welcome Back, {rejoinInfo.screenName}!</CardTitle>
               <CardDescription className="text-sm text-muted-foreground pt-1 font-body">
                 Thy previous adventure awaits: <strong className="text-primary/90">{rejoinInfo.gameName}</strong>
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-3 pt-0">
               <Button
                 variant="default"
-                size="lg"
                 className="w-full hunch-glow bg-primary hover:bg-primary/90 text-primary-foreground font-headline text-base tracking-wider"
                 onClick={handleRejoin}
               >
@@ -130,46 +130,52 @@ export default function HomePage() {
           </Card>
         )}
 
-        <Card className="hunch-box w-full"> {/* Applied hunch-box, removed other conflicting classes */}
-          <CardHeader className="text-center p-4 pt-6">
-            <CardTitle className="text-3xl font-headline text-sepia-dark">Welcome Traveler!</CardTitle>
-            <CardDescription className="text-base text-muted-foreground pt-2 font-body">
+        <Card className="hunch-box w-full">
+          <CardHeader className="text-center p-3">
+            <CardTitle className="text-2xl font-headline text-sepia-dark">Welcome Traveler!</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground pt-1 font-body">
               A game of intuition, strategy, and a sprinkle of fortune.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col space-y-4 p-6">
+          <CardContent className="flex flex-col space-y-2 p-4 pt-0">
             <Link href="/create-game" passHref>
-              <Button variant="default" size="lg" className="w-full hunch-glow bg-accent hover:bg-accent/90 text-accent-foreground font-headline text-base tracking-wider">
+              <Button variant="default" className="w-full hunch-glow bg-accent hover:bg-accent/90 text-accent-foreground font-headline text-base tracking-wider">
                 <Sparkles className="mr-2 h-5 w-5" /> Forge New Quest
               </Button>
             </Link>
             <Link href="/join-game" passHref>
-              <Button variant="outline" size="lg" className="w-full border-border hover:bg-muted/50 text-foreground font-headline text-base tracking-wider">
+              <Button variant="outline" className="w-full border-amber-800 text-amber-900 hover:bg-amber-800/10 font-headline text-base tracking-wider">
                 <Users className="mr-2 h-5 w-5" /> Join Existing Quest
               </Button>
             </Link>
             <Link href="/mini-games" passHref target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="lg" className="w-full border-border hover:bg-muted/50 text-foreground font-headline text-base tracking-wider">
+              <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground hover:bg-muted/40 font-headline text-base tracking-wider">
                 <Swords className="mr-2 h-5 w-5" /> End Game Arena
               </Button>
             </Link>
           </CardContent>
         </Card>
-        
-        <Card className="hunch-box w-full"> {/* Applied hunch-box, removed other conflicting classes */}
-          <CardHeader className="p-4">
-            <CardTitle className="text-xl font-headline text-sepia-dark flex items-center">
-              <ScrollText className="mr-2 h-5 w-5 text-primary" />
-              The Rules of Engagement
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-muted-foreground space-y-2 font-body text-sm pb-4 px-4">
-            <p><strong>1. Gather Thy Companions:</strong> One player begins the tale, others may join.</p>
-            <p><strong>2. Appoint a Game Master:</strong> They shall guide the quest (and may partake!).</p>
-            <p><strong>3. Journey Through a Set Number of Days:</strong> Each day holds trials of hunches and character plays.</p>
-            <p><strong>4. Seek Thy Objectives:</strong> Win 'lives' for the grand End Game, gather daily coins, and claim the coveted Jackpot!</p>
-          </CardContent>
-        </Card>
+
+        <div className="hunch-box w-full">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="rules" className="border-none">
+              <AccordionTrigger className="hover:no-underline py-1">
+                <span className="text-base font-headline text-sepia-dark flex items-center">
+                  <ScrollText className="mr-2 h-4 w-4 text-primary" />
+                  The Rules of Engagement
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="text-muted-foreground space-y-1.5 font-body text-sm pt-1">
+                  <p><strong>1. Gather Thy Companions:</strong> One player begins the tale, others may join.</p>
+                  <p><strong>2. Appoint a Game Master:</strong> They shall guide the quest (and may partake!).</p>
+                  <p><strong>3. Journey Through a Set Number of Days:</strong> Each day holds trials of hunches and character plays.</p>
+                  <p><strong>4. Seek Thy Objectives:</strong> Win 'lives' for the grand End Game, gather daily coins, and claim the coveted Jackpot!</p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
       </div>
     </PageLayout>
   );

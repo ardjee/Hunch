@@ -23,6 +23,7 @@ import JudgeTargetSelection from '@/components/game/JudgeTargetSelection';
 import MagicianTargetSelection from '@/components/game/MagicianTargetSelection';
 import DayResultsDisplay from '@/components/game/DayResultsDisplay';
 import VoteSummaryDisplay from '@/components/game/VoteSummaryDisplay';
+import JackpotSummaryDisplay from '@/components/game/JackpotSummaryDisplay';
 import { CHARACTERS_LIST } from '@/lib/characters';
 import Image from 'next/image';
 import {
@@ -88,7 +89,9 @@ function GamePageContent() {
 
   useEffect(() => {
     if (gameData?.currentDayStep === 4 && gameData.activelyRevealedCharacterId) {
-      if (gameData.activelyRevealedCharacterId !== lastRevealedCharacterId) {
+      if (gameData.playerAwaitingTargetSelection) {
+        setIsRevealDialogOpen(false);
+      } else if (gameData.activelyRevealedCharacterId !== lastRevealedCharacterId) {
         setLastRevealedCharacterId(gameData.activelyRevealedCharacterId);
         setIsRevealDialogOpen(true);
       }
@@ -96,7 +99,7 @@ function GamePageContent() {
       setLastRevealedCharacterId(null);
       setIsRevealDialogOpen(false);
     }
-  }, [gameData?.activelyRevealedCharacterId, gameData?.currentDayStep, lastRevealedCharacterId]);
+  }, [gameData?.activelyRevealedCharacterId, gameData?.currentDayStep, gameData?.playerAwaitingTargetSelection ?? null, lastRevealedCharacterId]);
 
   // Measure content height and adjust castle size
   useEffect(() => {
@@ -241,6 +244,7 @@ function GamePageContent() {
             playerVotes={playerVotes || {}}
             onPlayerVote={gameActions.handlePlayerVote}
             currentDayStep={currentDayStep}
+            onProceedToNextStep={currentDayStep === 2 ? gameActions.handleProceedToCharacterSelectionPhase : undefined}
           />
         );
       }
@@ -261,6 +265,7 @@ function GamePageContent() {
             isCurrentUserGameMaster={isCurrentUserGameMaster}
             getNextCharacterToReveal={gameActions.getNextCharacterToReveal}
             forcedCharacterId={forcedSelectionForCurrentUser?.forcedCharacterId}
+            onProceedToNextStep={isCurrentUserGameMaster ? gameActions.handleProcessCharacterEffect : undefined}
           />
         );
       }
@@ -291,7 +296,7 @@ function GamePageContent() {
       }
     
       if (currentDayStep === 5 && currentDayResults) {
-        return <DayResultsDisplay results={currentDayResults} currentDay={currentDay} />;
+        return <DayResultsDisplay results={currentDayResults} currentDay={currentDay} isCurrentUserGameMaster={isCurrentUserGameMaster} onProceedToNextStep={isCurrentUserGameMaster ? gameActions.handleShowVoteSummary : undefined} />;
       }
 
       if (currentDayStep === 6) {
@@ -302,6 +307,20 @@ function GamePageContent() {
             currentDay={currentDay}
             actualResult={gameData.currentDayResults?.actualResult}
             currentDayResults={gameData.currentDayResults}
+            isCurrentUserGameMaster={isCurrentUserGameMaster}
+            onProceedToNextStep={isCurrentUserGameMaster ? gameActions.handleShowJackpotSummary : undefined}
+          />
+        );
+      }
+
+      if (currentDayStep === 7) {
+        return (
+          <JackpotSummaryDisplay
+            currentDay={currentDay}
+            jackpotAmount={gameData.jackpotAmount || 0}
+            jackpotLog={gameData.jackpotLog || []}
+            isCurrentUserGameMaster={isCurrentUserGameMaster}
+            onProceedToNextStep={isCurrentUserGameMaster ? gameActions.handleEndOfDayResolution : undefined}
           />
         );
       }
@@ -328,8 +347,13 @@ function GamePageContent() {
 
 
   return (
-    <PageLayout title="The Hunch" showLogo={false}>
-      <div className="w-full space-y-6 overflow-x-hidden">
+    <PageLayout showLogo={false}>
+      <div className="w-full space-y-3 overflow-x-hidden relative">
+        {gameData.currentDayStep && (
+          <div className="absolute -top-1 left-1 z-20 bg-foreground/80 text-background text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm opacity-60">
+            D{gameData.currentDay}S{gameData.currentDayStep}
+          </div>
+        )}
         {mainContent}
       </div>
 
@@ -378,10 +402,8 @@ function GamePageContent() {
                 value="player-selections" 
                 className="border border-border/60 rounded-lg px-3"
                 style={{
-                  backgroundImage: "url('/hunch_bg1.png')",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "top right",
-                  backgroundSize: "cover",
+                  backgroundColor: "hsla(35, 30%, 80%, 0.45)",
+                  backdropFilter: "blur(2px)",
                 }}
               >
                 <AccordionTrigger className="hover:no-underline py-2">
@@ -406,10 +428,8 @@ function GamePageContent() {
               onClick={() => setIsStandingsDialogOpen(true)}
               className="w-full border border-border/60 rounded-lg px-3 py-2 text-left"
               style={{
-                backgroundImage: "url('/hunch_bg1.png')",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "top right",
-                backgroundSize: "cover",
+                backgroundColor: "hsla(35, 30%, 80%, 0.45)",
+                backdropFilter: "blur(2px)",
               }}
             >
               <div className="flex items-center justify-between">
@@ -425,10 +445,8 @@ function GamePageContent() {
                 value="gm-controls" 
                 className="border border-border/60 rounded-lg px-3"
                 style={{
-                  backgroundImage: "url('/hunch_bg1.png')",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "top right",
-                  backgroundSize: "cover",
+                  backgroundColor: "hsla(35, 30%, 80%, 0.45)",
+                  backdropFilter: "blur(2px)",
                 }}
               >
                 <AccordionTrigger className="hover:no-underline py-2">
@@ -464,10 +482,8 @@ function GamePageContent() {
               value="navigation" 
               className="border border-border/60 rounded-lg px-3"
               style={{
-                backgroundImage: "url('/hunch_bg1.png')",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "top right",
-                backgroundSize: "cover",
+                backgroundColor: "hsla(35, 30%, 80%, 0.45)",
+                backdropFilter: "blur(2px)",
               }}
             >
               <AccordionTrigger className="hover:no-underline py-2">
@@ -494,10 +510,10 @@ function GamePageContent() {
         onOpenChange={(open) => setIsStandingsDialogOpen(open)}
       >
         <DialogContent
-          className="!fixed inset-0 w-screen h-[100dvh] max-w-none max-h-none m-0 rounded-none p-4 sm:p-6 md:p-8 !translate-x-0 !translate-y-0 flex flex-col border-4 border-amber-800/60 [&>button]:text-amber-900 [&>button]:hover:text-amber-950 [&>button]:hover:bg-amber-200/50 relative"
+          className="!fixed inset-0 w-screen h-[100dvh] max-w-none max-h-none m-0 rounded-none px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-[14vw] sm:pt-[11vw] md:pt-20 !translate-x-0 !translate-y-0 flex flex-col border-4 border-amber-800/60 [&>button]:text-amber-900 [&>button]:hover:text-amber-950 [&>button]:hover:bg-amber-200/50 relative"
           style={{
-            backgroundImage: "url('/div-background.jpg')",
-            backgroundRepeat: "no-repeat",
+            backgroundImage: "url('/parchment-background.png')",
+            backgroundRepeat: "repeat",
             backgroundPosition: "center center",
             backgroundSize: "cover",
           }}
@@ -570,69 +586,15 @@ function GamePageContent() {
             }}
           >
             <DialogContent
-              className="!fixed inset-0 w-screen h-[100dvh] max-w-none max-h-none m-0 rounded-none p-4 sm:p-6 md:p-8 !translate-x-0 !translate-y-0 flex flex-col border-4 border-amber-800/60 [&>button]:text-amber-900 [&>button]:hover:text-amber-950 [&>button]:hover:bg-amber-200/50 relative"
+              className="!fixed inset-0 w-screen h-[100dvh] max-w-none max-h-none m-0 rounded-none px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-[calc(14vw+50px)] sm:pt-[calc(11vw+50px)] md:pt-28 !translate-x-0 !translate-y-0 flex flex-col border-4 border-amber-800/60 [&>button]:text-amber-900 [&>button]:hover:text-amber-950 [&>button]:hover:bg-amber-200/50 relative"
               style={{
-                background: 'linear-gradient(to bottom, #0f1629 0%, #1a2338 50%, #0d1525 100%)',
+                backgroundImage: "url('/parchment-background.png')",
+                backgroundRepeat: 'repeat',
+                backgroundPosition: 'center center',
+                backgroundSize: 'cover',
               }}
               onInteractOutside={(event) => event.preventDefault()}
             >
-              {/* Starry night sky */}
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  backgroundImage: `
-                    radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 50% 50%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(2px 2px at 90% 40%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 33% 60%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(2px 2px at 70% 20%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(2px 2px at 40% 10%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 25% 50%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 85% 60%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 75% 90%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(2px 2px at 30% 15%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 65% 25%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 45% 75%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(2px 2px at 95% 55%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 5% 45%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 50% 35%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 12% 55%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(2px 2px at 35% 65%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 68% 45%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 88% 25%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(2px 2px at 22% 75%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 48% 15%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 72% 85%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(2px 2px at 38% 40%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 92% 70%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 18% 5%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(2px 2px at 58% 95%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 78% 35%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 42% 55%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(2px 2px at 8% 65%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 62% 5%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 28% 85%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(2px 2px at 52% 25%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 82% 45%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 15% 35%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(2px 2px at 45% 75%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 75% 15%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(1px 1px at 35% 95%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(2px 2px at 65% 55%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 25% 25%, rgba(255,255,255,0.8), transparent),
-                    radial-gradient(1px 1px at 55% 65%, rgba(255,255,255,0.7), transparent),
-                    radial-gradient(2px 2px at 85% 85%, rgba(255,255,255,0.9), transparent),
-                    radial-gradient(1px 1px at 5% 75%, rgba(255,255,255,0.6), transparent),
-                    radial-gradient(1px 1px at 95% 5%, rgba(255,255,255,0.8), transparent)
-                  `,
-                  backgroundSize: '100% 100%',
-                }}
-              />
               {/* Castle background at bottom */}
               <div 
                 className="absolute bottom-0 left-0 right-0 w-full h-auto pointer-events-none z-0"
@@ -644,17 +606,7 @@ function GamePageContent() {
                   minHeight: '47%',
                 }}
               />
-              <DialogHeader className="flex-shrink-0 relative z-10 bg-hunch-parchment p-4 sm:p-6 rounded-lg border-2 border-amber-800/60 shadow-lg">
-                <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-headline text-amber-900 flex items-center justify-center gap-2 sm:gap-3 text-center drop-shadow-sm">
-                  {revealedCharacter?.icon && <revealedCharacter.icon className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-amber-900" />}
-                  {revealedCharacter?.name || 'Character'} Revealed!
-                </DialogTitle>
-                <DialogDescription className="text-base sm:text-lg font-body text-amber-800 text-center">
-                  Character effects have been applied.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div ref={contentRef} className="space-y-4 mt-4 flex-1 overflow-y-auto relative z-10">
+              <div ref={contentRef} className="space-y-4 flex-1 overflow-y-auto relative z-10">
                 {/* Thief Target Box - Show when thief is revealed and there's exactly 1 thief */}
                 {revealedCharacter?.id === 'thief' && totalThiefCount === 1 && singleThiefTarget && (
                   <div className="bg-hunch-parchment p-3 sm:p-4 rounded-lg border-2 border-primary/30">
@@ -676,6 +628,17 @@ function GamePageContent() {
                     </div>
                   </div>
                 )}
+
+                {/* Character Reveal Header */}
+                <DialogHeader className="relative z-10 bg-hunch-parchment p-4 sm:p-6 rounded-lg border-2 border-amber-800/60 shadow-lg">
+                  <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-headline text-amber-900 flex items-center justify-center gap-2 sm:gap-3 text-center drop-shadow-sm">
+                    {revealedCharacter?.icon && <revealedCharacter.icon className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-amber-900" />}
+                    {revealedCharacter?.name || 'Character'} Revealed!
+                  </DialogTitle>
+                  <DialogDescription className="text-base sm:text-lg font-body text-amber-800 text-center">
+                    Character effects have been applied.
+                  </DialogDescription>
+                </DialogHeader>
                 {wasStolenFromByThief && thiefCount === 1 && totalThiefCount === 1 && (
                   <div className="bg-hunch-parchment p-3 sm:p-4 rounded-lg border-2 border-primary/30">
                     {playersWhoChoseCharacter.length > 0 ? (
@@ -967,7 +930,8 @@ function GamePageContent() {
                     }}
                     disabled={isProcessingNextCharacter}
                     size="lg" 
-                    className="font-headline w-full sm:w-auto bg-hunch-parchment text-amber-900 hover:bg-hunch-parchment/90 border-2 border-amber-800/60 shadow-lg font-bold text-lg sm:text-xl disabled:opacity-50"
+                    className="font-headline w-full sm:w-auto bg-hunch-parchment text-amber-900 hover:bg-hunch-parchment border-2 border-amber-800/60 shadow-lg font-bold text-lg sm:text-xl disabled:opacity-50"
+                    style={{ backgroundColor: 'hsl(40, 75%, 94%)' }}
                   >
                     {isProcessingNextCharacter ? (
                       <>

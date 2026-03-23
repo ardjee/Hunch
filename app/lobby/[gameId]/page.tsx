@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserCheck, UserPlus, Crown, Play, Users, ShieldCheck, Copy, Info, Loader2, ShieldAlert, Castle, Bot } from 'lucide-react';
+import { UserCheck, UserPlus, Crown, Play, Users, ShieldCheck, Copy, Info, Loader2, ShieldAlert, Castle, Bot, Settings } from 'lucide-react';
 import type { Player, Game } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,21 +41,21 @@ function LobbyContent() {
   const isHostFromUrl = searchParams.get('isHost') === 'true';
   const playerIdFromUrl = searchParams.get('playerId');
 
+  const [lobbyView, setLobbyView] = useState<'players' | 'settings'>('players');
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameData, setGameData] = useState<Game | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // For actions like 'Start Game'
-  const [isPageLoading, setIsPageLoading] = useState(true); // For initial page content
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null); // Initialize to null
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [selectedAiProfileId, setSelectedAiProfileId] = useState<AiProfileId>(DEFAULT_AI_PROFILE_ID);
   const [isAddingAi, setIsAddingAi] = useState(false);
-  
+
   const playerProcessingAttemptedRef = useRef(false);
 
-  // Effect to set host's current ID and localStorage immediately
   useEffect(() => {
     if (isHostFromUrl && playerIdFromUrl) {
-      setCurrentPlayerId(playerIdFromUrl); // Set this as soon as possible
-      if (newPlayerScreenNameFromUrl) { // screenName from URL is host's name
+      setCurrentPlayerId(playerIdFromUrl);
+      if (newPlayerScreenNameFromUrl) {
         localStorage.setItem('lastActiveGameId', gameId);
         localStorage.setItem('lastPlayerId', playerIdFromUrl);
         localStorage.setItem('lastScreenName', newPlayerScreenNameFromUrl);
@@ -63,7 +63,6 @@ function LobbyContent() {
     }
   }, [gameId, isHostFromUrl, playerIdFromUrl, newPlayerScreenNameFromUrl]);
 
-  // Main data subscription effect for game and players
   useEffect(() => {
     if (!gameId) {
       setIsPageLoading(false);
@@ -80,16 +79,13 @@ function LobbyContent() {
     }
 
     setIsPageLoading(true);
-    // Reset attempt flag here in case this effect re-runs (e.g. HMR),
-    // giving player processing logic a fresh chance if new URL params arrive.
-    playerProcessingAttemptedRef.current = false; 
+    playerProcessingAttemptedRef.current = false;
 
     const gameDocRef = doc(db, 'games', gameId);
     const unsubscribeGame = onSnapshot(gameDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const game = docSnap.data() as Game;
         setGameData(game);
-        // Redirection logic handled in a separate useEffect based on gameData.status and currentPlayerId
       } else {
         toast({ title: "Game Not Found", description: "This game lobby no longer exists or the ID is incorrect.", variant: "destructive" });
         localStorage.removeItem('lastActiveGameId');
@@ -117,26 +113,21 @@ function LobbyContent() {
       unsubscribeGame();
       unsubscribePlayers();
     };
-  }, [gameId, router, toast]); // Dependencies are minimal, focused on what triggers re-subscription.
+  }, [gameId, router, toast]);
 
-  // Effect for processing a NEW non-host player joining the lobby
   useEffect(() => {
-    if (!db) { // Ensure db is available before attempting to process player
-        console.error("LobbyContent: Firestore 'db' instance is not available for processing joining player.");
-        if (newPlayerScreenNameFromUrl && !isHostFromUrl) { // Only toast for actual join attempts
+    if (!db) {
+        if (newPlayerScreenNameFromUrl && !isHostFromUrl) {
              toast({ title: "Database Error", description: "Cannot process join request. Firestore not ready.", variant: "destructive" });
         }
         return;
     }
 
-    // Guard conditions
     if (!gameId || !newPlayerScreenNameFromUrl || isHostFromUrl || !gameData || playerProcessingAttemptedRef.current) {
-      return; 
+      return;
     }
-    
-    // Ensure this runs only if lobby is open, to prevent joining started games
+
     if (gameData.status !== 'lobby') {
-        // If not host and trying to access non-lobby game via URL params for joining.
         if(!isHostFromUrl){
             toast({ title: "Game Not in Lobby", description: "This game is not accepting new players.", variant: "destructive"});
             router.push('/');
@@ -144,11 +135,10 @@ function LobbyContent() {
         return;
     }
 
-    playerProcessingAttemptedRef.current = true; // Mark that we're attempting to process this player from URL
+    playerProcessingAttemptedRef.current = true;
 
     const processJoiningPlayer = async () => {
       try {
-        // Check if player with this screenName already exists in this game
         const playersQuery = query(collection(db, 'games', gameId, 'players'), where("screenName", "==", newPlayerScreenNameFromUrl));
         const querySnapshot = await getDocs(playersQuery);
 
@@ -161,27 +151,27 @@ function LobbyContent() {
           existingPlayerId = docSnap.id;
         }
 
-        if (!existingPlayer) { // Player is genuinely new to this game
-          const newJoiningPlayerId = doc(collection(db, 'players_placeholder')).id; // Generate a new ID
+        if (!existingPlayer) {
+          const newJoiningPlayerId = doc(collection(db, 'players_placeholder')).id;
           const newPlayerPayload: Player = {
             id: newJoiningPlayerId,
             screenName: newPlayerScreenNameFromUrl,
             lives: 1,
             dailyCoins: 2,
-            isAdmitted: false, // New players require host approval
+            isAdmitted: false,
             createdAt: serverTimestamp(),
           };
           await setDoc(doc(db, 'games', gameId, 'players', newJoiningPlayerId), newPlayerPayload);
-          setCurrentPlayerId(newJoiningPlayerId); // Set current user ID for this new player
+          setCurrentPlayerId(newJoiningPlayerId);
           localStorage.setItem('lastActiveGameId', gameId);
           localStorage.setItem('lastPlayerId', newJoiningPlayerId);
           localStorage.setItem('lastScreenName', newPlayerScreenNameFromUrl);
           toast({ title: "Joined Lobby Queue", description: `You've requested to join as ${newPlayerScreenNameFromUrl}. Waiting for host approval.` });
-        } else if (existingPlayerId) { // Player with this screen name already exists (e.g., rejoining)
-          setCurrentPlayerId(existingPlayerId); // Set current user ID to existing player's ID
+        } else if (existingPlayerId) {
+          setCurrentPlayerId(existingPlayerId);
           localStorage.setItem('lastActiveGameId', gameId);
           localStorage.setItem('lastPlayerId', existingPlayerId);
-          localStorage.setItem('lastScreenName', newPlayerScreenNameFromUrl); // Use URL param name in case of re-entry
+          localStorage.setItem('lastScreenName', newPlayerScreenNameFromUrl);
           toast({ title: "Rejoining Lobby", description: `Welcome back, ${newPlayerScreenNameFromUrl}! Your status is: ${existingPlayer?.isAdmitted ? 'Admitted' : 'Pending approval'}.`, variant: "default" });
         }
       } catch (error: any) {
@@ -192,15 +182,13 @@ function LobbyContent() {
 
     processJoiningPlayer();
 
-  }, [gameId, newPlayerScreenNameFromUrl, isHostFromUrl, gameData, players, toast, router]); // 'players' is needed for screenName check
+  }, [gameId, newPlayerScreenNameFromUrl, isHostFromUrl, gameData, players, toast, router]);
 
 
-  // Effect for navigating to game page when status changes to 'in-progress'
   useEffect(() => {
     if (gameData?.status === 'in-progress' && currentPlayerId && gameId) {
       const currentPlayerDetails = players.find(p => p.id === currentPlayerId);
       if (currentPlayerDetails?.isAdmitted) {
-        // Ensure localStorage is set before navigating (it might have been set by other effects already)
         localStorage.setItem('lastActiveGameId', gameId);
         localStorage.setItem('lastPlayerId', currentPlayerId);
         if (currentPlayerDetails.screenName) {
@@ -208,11 +196,9 @@ function LobbyContent() {
         }
         router.push(`/game/${gameId}?playerId=${currentPlayerId}&screenName=${encodeURIComponent(currentPlayerDetails.screenName)}`);
       } else if (isHostFromUrl && playerIdFromUrl === currentPlayerId) {
-        // Special case for host: if gameData says 'in-progress' and this IS the host, they should be able to get in.
-        // Their player document might not be in `players` state immediately if list is large/slow.
         localStorage.setItem('lastActiveGameId', gameId);
         localStorage.setItem('lastPlayerId', currentPlayerId);
-        if(newPlayerScreenNameFromUrl) localStorage.setItem('lastScreenName', newPlayerScreenNameFromUrl); // Host's name from URL
+        if(newPlayerScreenNameFromUrl) localStorage.setItem('lastScreenName', newPlayerScreenNameFromUrl);
         router.push(`/game/${gameId}?playerId=${currentPlayerId}&screenName=${encodeURIComponent(newPlayerScreenNameFromUrl || 'Host')}`);
       }
     }
@@ -258,7 +244,7 @@ function LobbyContent() {
       return;
     }
     const admittedPlayersList = players.filter(p => p.isAdmitted);
-    if (admittedPlayersList.length < 1) { // Game master is a player, so min 1
+    if (admittedPlayersList.length < 1) {
         toast({ title: "Not Enough Players", description: "At least one admitted player (the Game Master) is needed to start.", variant: "destructive"});
         return;
     }
@@ -266,7 +252,6 @@ function LobbyContent() {
 
     try {
       await updateDoc(doc(db, 'games', gameId), { status: 'in-progress', currentDay: 1, currentDayStep: 1 });
-      // Navigation to game page will be handled by the useEffect listening to gameData.status
     } catch (error) {
       console.error("Error starting game:", error);
       toast({
@@ -323,9 +308,8 @@ function LobbyContent() {
       setIsAddingAi(false);
     }
   };
-  
-  // This is the primary loading condition for the page content.
-  if (isPageLoading || !gameData) { 
+
+  if (isPageLoading || !gameData) {
     return (
       <PageLayout title="Loading Lobby...">
         <div className="flex justify-center items-center h-64">
@@ -335,13 +319,11 @@ function LobbyContent() {
     );
   }
 
-  // If game is no longer in lobby state (e.g., started by another tab), and current user is not yet redirected.
-  // This is a fallback, main redirection is handled by useEffect.
   if (gameData.status !== 'lobby' && !isPageLoading) {
       const currentPlayerDetails = players.find(p => p.id === currentPlayerId);
       if (currentPlayerDetails?.isAdmitted && gameData.status === 'in-progress') {
-          // Handled by useEffect for redirection. This part is defensive.
-      } else if (!isHostFromUrl) { // Only push non-hosts away from a non-lobby game if they aren't part of it.
+          // Handled by useEffect for redirection
+      } else if (!isHostFromUrl) {
         toast({ title: "Game Status Changed", description: `This game is now ${gameData.status}. Returning to home.`, variant: "default" });
         router.push('/');
         return ( <PageLayout title="Redirecting..."><div className="flex justify-center items-center h-64"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div></PageLayout>);
@@ -350,70 +332,93 @@ function LobbyContent() {
 
 
   const admittedPlayers = players.filter(p => p.isAdmitted);
-  const pendingPlayers = players.filter(p => !p.isAdmitted && p.screenName); // Ensure they have a screenName to show
+  const pendingPlayers = players.filter(p => !p.isAdmitted && p.screenName);
   const currentPlayerData = players.find(p => p.id === currentPlayerId);
-  // The host is a dynamic role based on gameMasterId. The isHostFromUrl param is only for initial entry/creation.
-  // The person with GM powers is always the gameData.gameMasterId.
   const isCurrentPlayerGameMaster = !!(gameData && gameData.gameMasterId === currentPlayerId);
   const isLobbyFull = admittedPlayers.length >= gameData.maxPlayers;
-
+  const canStartGame = isCurrentPlayerGameMaster && !!gameData.gameMasterId && admittedPlayers.length > 0;
 
   return (
     <PageLayout title={`Lobby: ${gameData.gameName || "The Hunch"}`} showLogo={false}>
-      <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <div className="text-center pt-2">
-                <p className="text-lg font-semibold text-foreground">Waiting for players to join.</p>
-                <CardDescription className="text-sm">
-                    The Game Master can admit players and start the game.
-                </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-2 flex items-center"><Users className="mr-2 h-5 w-5 text-primary" /> Admitted Players ({admittedPlayers.length} / {gameData.maxPlayers})</h3>
-              {admittedPlayers.length === 0 && <p className="text-muted-foreground">No players admitted yet. New joiners will appear in 'Pending Approval'.</p>}
-              <div className="space-y-3">
+      <div className="space-y-2">
+        {/* Header banner - solid background for readability */}
+        <Card className="bg-accent text-accent-foreground border-0">
+          <CardContent className="p-2 text-center">
+            <p className="text-sm font-semibold">Waiting for players to join.</p>
+            <p className="text-xs opacity-80">
+              The Game Master can admit players and start the game.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Tab navigation for Game Master */}
+        {isCurrentPlayerGameMaster && (
+          <div className="flex gap-2">
+            <Button
+              variant={lobbyView === 'players' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1"
+              onClick={() => setLobbyView('players')}
+            >
+              <Users className="mr-2 h-4 w-4" /> Players ({admittedPlayers.length}/{gameData.maxPlayers})
+            </Button>
+            <Button
+              variant={lobbyView === 'settings' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1"
+              onClick={() => setLobbyView('settings')}
+            >
+              <Settings className="mr-2 h-4 w-4" /> AI & Settings
+            </Button>
+          </div>
+        )}
+
+        {/* PLAYERS VIEW */}
+        {(lobbyView === 'players' || !isCurrentPlayerGameMaster) && (
+          <Card>
+            <CardContent className="p-3 space-y-2">
+              <h3 className="text-sm font-semibold flex items-center">
+                <Users className="mr-2 h-4 w-4 text-primary" /> Admitted Players ({admittedPlayers.length} / {gameData.maxPlayers})
+              </h3>
+              {admittedPlayers.length === 0 && <p className="text-sm text-muted-foreground">No players admitted yet.</p>}
+              <div className="space-y-1.5 max-h-[35vh] overflow-y-auto">
                 {admittedPlayers.map(player => (
                   <PlayerItem key={player.id} player={player} isGameMaster={player.id === gameData.gameMasterId} />
                 ))}
               </div>
-            </div>
 
-            {isCurrentPlayerGameMaster && pendingPlayers.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center"><UserPlus className="mr-2 h-5 w-5 text-accent" /> Pending Approval ({pendingPlayers.length})</h3>
-                {isLobbyFull && <p className="text-sm text-destructive font-semibold mb-2">Lobby is full. Cannot admit more players.</p>}
-                <div className="space-y-3">
-                  {pendingPlayers.map(player => (
-                    <PlayerItem key={player.id} player={player} onAdmit={handleAdmitPlayer} isHostView={isCurrentPlayerGameMaster} canAdmit={!isLobbyFull} />
-                  ))}
-                </div>
-              </div>
-            )}
-             {isCurrentPlayerGameMaster && pendingPlayers.length === 0 && players.filter(p => !p.isAdmitted).length > 0 && (
-                <p className="text-sm text-muted-foreground">No other players currently waiting for approval.</p>
-            )}
-
-            {isCurrentPlayerGameMaster && (
-              <div className="rounded-xl border border-dashed border-primary/30 bg-muted/40 p-4 space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold flex items-center">
-                      <Bot className="mr-2 h-5 w-5 text-primary" /> AI Assistants
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Fill extra seats with computer-controlled players who handle every in-game task automatically.
-                    </p>
+              {isCurrentPlayerGameMaster && pendingPlayers.length > 0 && (
+                <div className="pt-3 border-t border-border/50">
+                  <h3 className="text-base font-semibold mb-2 flex items-center">
+                    <UserPlus className="mr-2 h-4 w-4 text-accent" /> Pending ({pendingPlayers.length})
+                  </h3>
+                  {isLobbyFull && <p className="text-xs text-destructive font-semibold mb-2">Lobby full — cannot admit more.</p>}
+                  <div className="space-y-2">
+                    {pendingPlayers.map(player => (
+                      <PlayerItem key={player.id} player={player} onAdmit={handleAdmitPlayer} isHostView={isCurrentPlayerGameMaster} canAdmit={!isLobbyFull} />
+                    ))}
                   </div>
-                  <Badge variant="outline" className="uppercase tracking-wide text-xs">
-                    Beta
-                  </Badge>
                 </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* SETTINGS VIEW (AI Assistants + Game Master) */}
+        {lobbyView === 'settings' && isCurrentPlayerGameMaster && (
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <div>
+                <h3 className="text-base font-semibold flex items-center mb-1">
+                  <Bot className="mr-2 h-4 w-4 text-primary" /> AI Assistants
+                  <Badge variant="outline" className="ml-2 uppercase tracking-wide text-[10px]">Beta</Badge>
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Fill seats with AI players who handle all in-game tasks automatically.
+                </p>
+                <div className="flex flex-col gap-2">
                   <Select value={selectedAiProfileId} onValueChange={(value) => setSelectedAiProfileId(value as AiProfileId)}>
-                    <SelectTrigger className="w-full sm:w-64">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Choose a playstyle" />
                     </SelectTrigger>
                     <SelectContent>
@@ -426,98 +431,91 @@ function LobbyContent() {
                   </Select>
                   <Button
                     onClick={handleAddAiPlayer}
-                    className="w-full sm:w-auto"
-                    size="lg"
+                    className="w-full"
+                    size="default"
                     disabled={isAddingAi || isLobbyFull}
                   >
                     {isAddingAi ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <Bot className="mr-2 h-5 w-5" />
+                      <Bot className="mr-2 h-4 w-4" />
                     )}
-                    {isAddingAi ? 'Adding AI...' : 'Add AI Player'}
+                    {isAddingAi ? 'Adding...' : 'Add AI Player'}
                   </Button>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  <p>AI teammates submit hunches, vote, pick characters, and resolve judge/magician duties for you.</p>
-                  {isLobbyFull && (
-                    <p className="text-destructive mt-1 font-semibold">
-                      Lobby is full. Remove a player or increase the cap to add more AI assistants.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-
-            {isCurrentPlayerGameMaster && admittedPlayers.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="gameMaster" className="text-lg font-semibold flex items-center">
-                  <ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Assign Game Master
-                </Label>
-                <Select value={gameData.gameMasterId || undefined} onValueChange={handleSetGameMaster}>
-                  <SelectTrigger id="gameMaster" className="w-full sm:w-[280px]">
-                    <SelectValue placeholder="Select a Game Master" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {admittedPlayers.map(player => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.screenName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">The Game Master can also fully participate in the game.</p>
-              </div>
-            )}
-          </CardContent>
-          
-          {isCurrentPlayerGameMaster && (
-            <CardFooter className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 pt-4">
-               <Button onClick={() => router.push('/')} variant="outline" className="w-full sm:flex-1" size="lg">
-                <Castle className="mr-2 h-5 w-5" /> Back to Main
-              </Button>
-              <Button onClick={handleStartGame} className="w-full sm:flex-1" size="lg" disabled={isLoading || !gameData.gameMasterId || admittedPlayers.length === 0}>
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Play className="mr-2 h-5 w-5" />
+                {isLobbyFull && (
+                  <p className="text-xs text-destructive mt-2 font-semibold">
+                    Lobby is full. Remove a player or increase the cap.
+                  </p>
                 )}
-                {isLoading ? 'Starting Game...' : 'Start Game'}
-              </Button>
-            </CardFooter>
-          )}
+              </div>
 
-          {!isCurrentPlayerGameMaster && currentPlayerData && (
-            <>
-              <CardContent className="pt-0">
-                  <p className="text-center text-muted-foreground p-4 rounded-md bg-muted">
-                      {currentPlayerData.isAdmitted ? "Waiting for the host to start the game..." : "Waiting for the host to approve your request..."}
-                  </p>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button onClick={() => router.push('/')} variant="outline" className="w-full" size="lg">
-                  <Castle className="mr-2 h-5 w-5" /> Back to Main
-                </Button>
-              </CardFooter>
-            </>
-          )}
+              {admittedPlayers.length > 0 && (
+                <div className="pt-3 border-t border-border/50">
+                  <Label htmlFor="gameMaster" className="text-base font-semibold flex items-center mb-2">
+                    <ShieldCheck className="mr-2 h-4 w-4 text-primary" /> Assign Game Master
+                  </Label>
+                  <Select value={gameData.gameMasterId || undefined} onValueChange={handleSetGameMaster}>
+                    <SelectTrigger id="gameMaster" className="w-full">
+                      <SelectValue placeholder="Select a Game Master" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {admittedPlayers.map(player => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.screenName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">The Game Master can also fully participate.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-           {!isCurrentPlayerGameMaster && !currentPlayerData && newPlayerScreenNameFromUrl && (
-             <>
-              <CardContent className="pt-0">
-                  <p className="text-center text-muted-foreground p-4 rounded-md bg-muted flex items-center justify-center">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing your request to join as {newPlayerScreenNameFromUrl}...
-                  </p>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button onClick={() => router.push('/')} variant="outline" className="w-full" size="lg">
-                  <Castle className="mr-2 h-5 w-5" /> Back to Main
-                </Button>
-              </CardFooter>
-            </>
-          )}
-        </Card>
+        {/* ACTION BUTTONS — always visible */}
+        {isCurrentPlayerGameMaster && (
+          <div className="flex gap-2">
+            <Button onClick={() => router.push('/')} variant="outline" className="flex-1">
+              <Castle className="mr-2 h-4 w-4" /> Back
+            </Button>
+            <Button
+              onClick={handleStartGame}
+              className="flex-1 hunch-glow"
+              disabled={isLoading || !canStartGame}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-5 w-5" />
+              )}
+              {isLoading ? 'Starting...' : 'Start Game'}
+            </Button>
+          </div>
+        )}
+
+        {!isCurrentPlayerGameMaster && currentPlayerData && (
+          <div className="space-y-2">
+            <p className="text-center text-muted-foreground p-2 rounded-md bg-muted text-sm">
+              {currentPlayerData.isAdmitted ? "Waiting for the host to start the game..." : "Waiting for the host to approve your request..."}
+            </p>
+            <Button onClick={() => router.push('/')} variant="outline" className="w-full">
+              <Castle className="mr-2 h-4 w-4" /> Back to Main
+            </Button>
+          </div>
+        )}
+
+        {!isCurrentPlayerGameMaster && !currentPlayerData && newPlayerScreenNameFromUrl && (
+          <div className="space-y-2">
+            <p className="text-center text-muted-foreground p-2 rounded-md bg-muted text-sm flex items-center justify-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing your request to join as {newPlayerScreenNameFromUrl}...
+            </p>
+            <Button onClick={() => router.push('/')} variant="outline" className="w-full">
+              <Castle className="mr-2 h-4 w-4" /> Back to Main
+            </Button>
+          </div>
+        )}
       </div>
     </PageLayout>
   );
@@ -532,13 +530,12 @@ interface PlayerItemProps {
 }
 
 const PlayerItem: React.FC<PlayerItemProps> = ({ player, isGameMaster, onAdmit, isHostView, canAdmit }) => (
-  <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
-    <div className="flex items-center space-x-3">
-      <Avatar>
-        <AvatarImage src={`https://placehold.co/40x40.png?text=${getInitials(player.screenName)}`} alt={player.screenName} data-ai-hint="avatar profile" />
-        <AvatarFallback>{getInitials(player.screenName)}</AvatarFallback>
+  <div className="flex items-center justify-between p-2 bg-card rounded-lg border">
+    <div className="flex items-center space-x-2">
+      <Avatar className="h-8 w-8">
+        <AvatarFallback className="text-xs">{getInitials(player.screenName)}</AvatarFallback>
       </Avatar>
-      <span className="font-medium text-card-foreground">{player.screenName}</span>
+      <span className="font-medium text-sm text-card-foreground">{player.screenName}</span>
       {player.isAi && (
         <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
           AI
@@ -548,7 +545,7 @@ const PlayerItem: React.FC<PlayerItemProps> = ({ player, isGameMaster, onAdmit, 
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
-              <Crown className="h-5 w-5 text-yellow-500" />
+              <Crown className="h-4 w-4 text-yellow-500" />
             </TooltipTrigger>
             <TooltipContent>
               <p>Game Master</p>

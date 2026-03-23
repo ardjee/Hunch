@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HunchLogo = ({ size = 'text-5xl md:text-6xl' }: { size?: string }) => {
+const HunchLogo = ({ size = 'text-3xl md:text-4xl' }: { size?: string }) => {
   return (
     <div className={`font-logo font-bold ${size} text-sepia-dark`}>
       The Hunch

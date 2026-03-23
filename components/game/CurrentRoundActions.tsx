@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, FileText, Edit3, Check, Users, Award, Info, ThumbsUp, Loader2 } from 'lucide-react';
+import { Send, FileText, Edit3, Check, Users, Award, Info, ThumbsUp, Loader2, Sparkles } from 'lucide-react';
 import AbstractBlurredIcon from '@/components/icons/AbstractBlurredIcon';
 import { useState } from 'react';
 import type { Player } from '@/lib/types';
@@ -27,7 +27,8 @@ interface CurrentRoundActionsProps {
   currentUserId: string;
   playerVotes: { [votingPlayerId: string]: string };
   onPlayerVote: (votedForPlayerId: string) => void;
-  currentDayStep: number; 
+  currentDayStep: number;
+  onProceedToNextStep?: () => Promise<void>;
 }
 
 const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
@@ -45,18 +46,21 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
   playerVotes,
   onPlayerVote,
   currentDayStep,
+  onProceedToNextStep,
 }) => {
   const [gmChallengeInput, setGmChallengeInput] = useState('');
   const [playerHunchInput, setPlayerHunchInput] = useState('');
   const [gmActualResultInput, setGmActualResultInput] = useState('');
   const [isSubmittingHunch, setIsSubmittingHunch] = useState(false);
   const [isSubmittingVote, setIsSubmittingVote] = useState(false);
+  const [isProceeding, setIsProceeding] = useState(false);
 
 
   const currentUserHasSubmittedHunch = submittedHunchPlayerIds.has(currentUserId);
   const allPlayersSubmittedHunch = players.length > 0 && submittedHunchPlayerIds.size === players.length;
   const currentUserHasVoted = !!playerVotes[currentUserId];
   const totalVotesCast = Object.keys(playerVotes).length;
+  const allVotesIn = players.length > 0 && totalVotesCast === players.length;
 
   const handleSetChallengeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,12 +134,12 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-3">
         {currentDayStep === 2 && activeChallengeActualResult && (
           <>
             {!currentUserHasVoted && (
-              <div className="pt-6 border-t border-dashed">
-                <h4 className="text-md font-semibold mb-3 flex items-center">
+              <div className="pt-3 border-t border-dashed">
+                <h4 className="text-md font-semibold mb-2 flex items-center">
                   <ThumbsUp className="mr-2 h-5 w-5 text-primary" /> Who Was Closest?
                 </h4>
                 <p className="text-sm text-muted-foreground mb-3">
@@ -162,7 +166,7 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
             )}
             {currentUserHasVoted && (
               <>
-                <div className="pt-6 border-t border-dashed">
+                <div className="pt-3 border-t border-dashed">
                   <div className="hunch-box p-3 rounded-md text-center">
                     <ThumbsUp className="inline-block mr-2 h-5 w-5 text-primary" />
                     <span className="font-medium text-primary">Your vote for this round has been submitted!</span>
@@ -203,6 +207,22 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
                     </AccordionItem>
                   </Accordion>
                 </div>
+                {isGameMaster && allVotesIn && onProceedToNextStep && (
+                  <div className="pt-4">
+                    <Button
+                      className="w-full hunch-glow"
+                      size="lg"
+                      disabled={isProceeding}
+                      onClick={async () => {
+                        setIsProceeding(true);
+                        try { await onProceedToNextStep(); } finally { setIsProceeding(false); }
+                      }}
+                    >
+                      {isProceeding ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                      {isProceeding ? 'Proceeding...' : 'Finalize Voting & Proceed'}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </>
@@ -211,7 +231,7 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
         {currentDayStep === 1 && (
           <>
             {activeChallengeDescription && !currentUserHasSubmittedHunch && (
-              <form onSubmit={handleSubmitHunch} className="space-y-4">
+              <form onSubmit={handleSubmitHunch} className="space-y-2">
                 <div className="space-y-1 hunch-glow p-2 rounded-md">
                   <Label htmlFor="hunchInput" className="text-base">Your Hunch:</Label>
                   <div className="flex items-center space-x-2">
@@ -240,94 +260,104 @@ const CurrentRoundActions: React.FC<CurrentRoundActionsProps> = ({
               </div>
             )}
 
-            {activeChallengeDescription && (
-              <div className="pt-4 border-t">
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="submission-status" className="border border-border rounded-lg px-4">
-                    <AccordionTrigger className="hover:no-underline flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-primary" />
-                        <span className="text-md font-semibold">Hunch Submission Status</span>
-                      </span>
-                      <Badge variant="secondary">
-                        {submittedHunchPlayerIds.size} / {players.length} submitted
-                      </Badge>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      {players.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No players available to show status.</p>
-                      ) : submittedHunchPlayerIds.size === 0 && players.length > 0 ? (
-                        <p className="text-sm text-muted-foreground">No hunches submitted yet for this challenge.</p>
-                      ) : (
-                        <ul className="space-y-2 pt-2">
-                          {players.map(player => (
-                            <li key={player.id} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded-md">
-                              <span className="text-foreground font-medium">{player.screenName}</span>
-                              {submittedHunchPlayerIds.has(player.id) ? (
-                                <Badge variant="default" className="bg-primary text-primary-foreground">
-                                  <Check className="mr-1 h-3 w-3" /> Submitted
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline">Pending</Badge>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
+            {isGameMaster && !activeChallengeDescription && (
+              <form onSubmit={handleSetChallengeSubmit} className="space-y-2 pt-3 border-t border-dashed">
+                <div className="space-y-1 hunch-glow rounded-md p-2">
+                  <Label htmlFor="challengeDescription" className="text-base flex items-center">
+                    <Edit3 className="mr-2 h-5 w-5 text-primary" /> Challenge Description
+                  </Label>
+                  <Textarea
+                    id="challengeDescription"
+                    value={gmChallengeInput}
+                    onChange={(e) => setGmChallengeInput(e.target.value)}
+                    placeholder="e.g., How many steps will we walk on our nature hike today?"
+                    rows={2}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  <FileText className="mr-2 h-4 w-4" /> Set Challenge for Round
+                </Button>
+              </form>
             )}
 
-            {isGameMaster && (
+            {activeChallengeDescription && (
               <>
-                {!activeChallengeDescription && (
-                  <form onSubmit={handleSetChallengeSubmit} className="space-y-4 pt-6 border-t border-dashed">
-                    <div className="space-y-2 hunch-glow rounded-md p-2">
-                      <Label htmlFor="challengeDescription" className="text-base flex items-center">
-                        <Edit3 className="mr-2 h-5 w-5 text-primary" /> Challenge Description
-                      </Label>
-                      <Textarea
-                        id="challengeDescription"
-                        value={gmChallengeInput}
-                        onChange={(e) => setGmChallengeInput(e.target.value)}
-                        placeholder="e.g., How many steps will we walk on our nature hike today?"
-                        rows={3}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full">
-                      <FileText className="mr-2 h-4 w-4" /> Set Challenge for Round
-                    </Button>
-                  </form>
+                {/* Show submission status accordion ONLY when not all hunches are in */}
+                {!allPlayersSubmittedHunch && (
+                  <div className="pt-4 border-t">
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="submission-status" className="border border-border rounded-lg px-4">
+                        <AccordionTrigger className="hover:no-underline flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-primary" />
+                            <span className="text-md font-semibold">Hunch Submission Status</span>
+                          </span>
+                          <Badge variant="secondary">
+                            {submittedHunchPlayerIds.size} / {players.length} submitted
+                          </Badge>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {players.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No players available to show status.</p>
+                          ) : submittedHunchPlayerIds.size === 0 && players.length > 0 ? (
+                            <p className="text-sm text-muted-foreground">No hunches submitted yet for this challenge.</p>
+                          ) : (
+                            <ul className="space-y-2 pt-2">
+                              {players.map(player => (
+                                <li key={player.id} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded-md">
+                                  <span className="text-foreground font-medium">{player.screenName}</span>
+                                  {submittedHunchPlayerIds.has(player.id) ? (
+                                    <Badge variant="default" className="bg-primary text-primary-foreground">
+                                      <Check className="mr-1 h-3 w-3" /> Submitted
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline">Pending</Badge>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
                 )}
-                {activeChallengeDescription && !activeChallengeActualResult && (
-                  <form onSubmit={handleRevealResultSubmit} className="space-y-4 pt-6 border-t border-dashed">
-                    {allPlayersSubmittedHunch && (
-                      <div className="hunch-box p-3 rounded-md text-left flex items-start">
-                        <Info className="inline-block mr-3 h-5 w-5 text-primary mt-1 shrink-0" />
-                        <p className="font-medium text-sm text-foreground">All players have submitted their hunches! It's time to reveal the actual result (to begin Step 2).</p>
-                      </div>
+
+                {/* GM: Reveal actual result — shown on its own once all hunches are in */}
+                {isGameMaster && !activeChallengeActualResult && (
+                  <>
+                    {allPlayersSubmittedHunch ? (
+                      <form onSubmit={handleRevealResultSubmit} className="space-y-2 pt-3 border-t border-dashed">
+                        <div className="hunch-box p-3 rounded-md text-left flex items-start">
+                          <Info className="inline-block mr-3 h-5 w-5 text-primary mt-1 shrink-0" />
+                          <p className="font-medium text-sm text-foreground">All players have submitted their hunches! Enter the actual result to begin Step 2.</p>
+                        </div>
+                        <div className="space-y-2 hunch-glow p-2 rounded-md">
+                          <Label htmlFor="actualResultInput" className="text-base flex items-center">
+                            <Award className="mr-2 h-5 w-5 text-primary" /> Actual Result of Challenge
+                          </Label>
+                          <Input
+                            id="actualResultInput"
+                            type="text"
+                            value={gmActualResultInput}
+                            onChange={(e) => setGmActualResultInput(e.target.value)}
+                            placeholder="e.g., 8500 steps"
+                            required
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" variant="secondary">
+                          <Check className="mr-2 h-4 w-4" /> Reveal Actual Result
+                        </Button>
+                      </form>
+                    ) : (
+                      players.length > 0 && (
+                        <p className="text-xs text-muted-foreground text-center pt-2">
+                          Waiting for all players to submit hunches before revealing result.
+                        </p>
+                      )
                     )}
-                    <div className="space-y-2 hunch-glow p-2 rounded-md">
-                      <Label htmlFor="actualResultInput" className="text-base flex items-center">
-                        <Award className="mr-2 h-5 w-5 text-primary" /> Actual Result of Challenge
-                      </Label>
-                      <Textarea
-                        id="actualResultInput"
-                        value={gmActualResultInput}
-                        onChange={(e) => setGmActualResultInput(e.target.value)}
-                        placeholder="e.g., 8500 steps"
-                        rows={2}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" variant="secondary" disabled={!allPlayersSubmittedHunch && players.length > 0}>
-                      <Check className="mr-2 h-4 w-4" /> Reveal Actual Result
-                    </Button>
-                     {(!allPlayersSubmittedHunch && players.length > 0) && <p className="text-xs text-muted-foreground text-center">Waiting for all players to submit hunches.</p>}
-                  </form>
+                  </>
                 )}
               </>
             )}

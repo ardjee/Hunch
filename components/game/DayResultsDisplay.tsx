@@ -6,16 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Flame, ShieldCheck, Crown, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import React, { useMemo } from 'react';
 
 interface DayResultsDisplayProps {
   results: NonNullable<Game['currentDayResults']>;
   currentDay: number;
+  isCurrentUserGameMaster?: boolean;
+  onProceedToNextStep?: () => Promise<void>;
 }
 
 type PlayerHunchResult = NonNullable<Game['currentDayResults']>['playerHunches'][0];
 
-const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentDay }) => {
+const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentDay, isCurrentUserGameMaster, onProceedToNextStep }) => {
   const sortedPlayerResults = useMemo(() => {
     if (!results?.playerHunches) return [];
     return [...results.playerHunches].sort((a, b) => {
@@ -30,15 +33,7 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
 
   if (!results || !results.playerHunches) {
     return (
-      <Card 
-        className="bg-card border-2 border-border shadow-parchment"
-        style={{
-          backgroundImage: "url('/hunch_bg1.png')",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "top right",
-          backgroundSize: "cover",
-        }}
-      >
+      <Card className="border-2 border-border/50">
         <CardHeader className="p-3 text-center">
           <div className="inline-block mx-auto title-plaque">
             RESULTS NOT AVAILABLE
@@ -59,17 +54,9 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
       : null;
 
   return (
-    <Card 
-      className="bg-card border-2 border-border shadow-parchment mb-6 mt-8"
-      style={{
-        backgroundImage: "url('/hunch_bg1.png')",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "top right",
-        backgroundSize: "cover",
-      }}
-    >
+    <Card className="border-2 border-border/50">
       <CardHeader className="p-3 text-center">
-        <div className="inline-block mx-auto title-plaque mb-3">
+        <div className="inline-block mx-auto title-plaque mb-2">
           Day {currentDay} RESULTS (STEP 5)
         </div>
         <CardDescription className="text-base font-body text-foreground flex items-center justify-center">
@@ -78,7 +65,7 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4">
-        <ScrollArea className="max-h-[60vh] md:h-[350px] pr-2">
+        <ScrollArea className="max-h-[50vh] md:h-[350px] pr-2">
           {sortedPlayerResults.length === 0 && (
             <p className="font-body text-muted-foreground text-center py-4">No hunches were submitted.</p>
           )}
@@ -94,12 +81,6 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
                       isActualBestPlayer && !playerResult.isDisqualified ? 'bg-primary/10 border-primary/40 shadow-sm' :
                       'bg-card border-border'
                     }`}
-                  style={{
-                    backgroundImage: "url('/hunch_bg1.png')",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "top right",
-                    backgroundSize: "cover",
-                  }}
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-sm font-headline text-foreground">
@@ -134,6 +115,15 @@ const DayResultsDisplay: React.FC<DayResultsDisplayProps> = ({ results, currentD
             })}
           </div>
         </ScrollArea>
+        {isCurrentUserGameMaster && onProceedToNextStep && (
+          <Button
+            onClick={onProceedToNextStep}
+            className="w-full mt-4 font-headline text-lg"
+            size="lg"
+          >
+            Proceed to Voting (Step 6)
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

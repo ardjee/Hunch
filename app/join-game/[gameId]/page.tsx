@@ -136,7 +136,7 @@ export default function JoinGameByIdPage() {
 
   return (
     <PageLayout title="Join Game">
-      <div className="flex justify-center items-center min-h-[60vh]">
+      <div className="flex justify-center items-center">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-xl font-headline text-primary">

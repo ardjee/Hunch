@@ -38,7 +38,7 @@ const PlayerSelectionStatusList: React.FC<PlayerSelectionStatusListProps> = ({
 }) => {
   const cardClasses = isEmbedded
     ? "mt-6 border-primary/30 bg-transparent shadow-none border-none mb-0" // Minimal styling when embedded
-    : "border-primary/30 bg-card shadow-parchment hunch-box mb-6"; // Full styling when standalone
+    : "border-primary/30 hunch-box mb-6"; // Full styling when standalone
 
   const headerPadding = isEmbedded ? "pb-3 pt-0" : "pb-3 pt-4";
   const contentPadding = isEmbedded ? "pt-0 pb-2" : "pt-0 pb-4";
